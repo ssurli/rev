@@ -1,0 +1,2748 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Pittura ad Olio — Easy Recap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+
+/* ══ RESET ══════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Lora', Georgia, serif;
+  background: #f7f1e5;
+  color: #28180e;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══ CSS VARIABLES ════════════════════════════════════════════════ */
+:root {
+  --bg:      #f7f1e5;  --bg2:     #f0e9d8;
+  --gold:    #a88a44;  --gold-l:  #c8a85a;
+  --gold-f:  #e2c87a;  --gold-vf: #ecdcaa;
+  --ink:     #28180e;  --ink-l:   #5a4430;
+  --ink-f:   #8c7860;  --ink-ff:  #b0a090;
+  --card:    #f2ead8;  --card2:   #ebe1cc;
+  --r:       10px;
+  --safe-b:  env(safe-area-inset-bottom, 0px);
+}
+
+/* ══ RADIO-BASED TAB NAVIGATION ══════════════════════════════════ */
+/* Hide all radio inputs */
+.tab-radio { display: none; }
+
+/* ── App shell ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.hdr {
+  flex-shrink: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--gold-vf);
+  padding: 14px 18px 12px;
+  text-align: center;
+}
+
+/* ── Sections container ── */
+.sections {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Each section: hidden by default ── */
+.section {
+  display: none;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 16px 32px;
+  overscroll-behavior-y: contain;
+}
+
+/* ── Show section when its radio is checked ── */
+#tab-teoria:checked    ~ #app .sections #s-teoria,
+#tab-grisaille:checked ~ #app .sections #s-grisaille,
+#tab-ombre:checked     ~ #app .sections #s-ombre,
+#tab-cassel:checked    ~ #app .sections #s-cassel,
+#tab-palette:checked   ~ #app .sections #s-palette,
+#tab-nudo:checked      ~ #app .sections #s-nudo { display: block; }
+
+/* ── Section fade-in ── */
+.section { animation: none; }
+#tab-teoria:checked    ~ #app .sections #s-teoria,
+#tab-grisaille:checked ~ #app .sections #s-grisaille,
+#tab-ombre:checked     ~ #app .sections #s-ombre,
+#tab-cassel:checked    ~ #app .sections #s-cassel,
+#tab-palette:checked   ~ #app .sections #s-palette,
+#tab-nudo:checked      ~ #app .sections #s-nudo {
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* ── Tab bar ── */
+.tabbar {
+  flex-shrink: 0;
+  display: flex;
+  background: var(--bg);
+  border-top: 1px solid var(--gold-vf);
+  padding-bottom: var(--safe-b);
+  box-shadow: 0 -4px 20px rgba(40,24,14,.08);
+}
+
+/* ── Tab label (acts as button) ── */
+.tab-lbl {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 2px 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
+  position: relative;
+  gap: 3px;
+}
+.tab-icon  { font-size: 18px; line-height: 1; }
+.tab-label {
+  font-family: 'Lora', serif;
+  font-size: 9px; letter-spacing: .05em;
+  text-transform: uppercase; font-style: italic;
+  color: var(--ink-ff); white-space: nowrap;
+}
+
+/* ── Active tab styles ── */
+#tab-teoria:checked    ~ #app .tabbar label[for="tab-teoria"],
+#tab-grisaille:checked ~ #app .tabbar label[for="tab-grisaille"],
+#tab-ombre:checked     ~ #app .tabbar label[for="tab-ombre"],
+#tab-cassel:checked    ~ #app .tabbar label[for="tab-cassel"],
+#tab-palette:checked   ~ #app .tabbar label[for="tab-palette"],
+#tab-nudo:checked      ~ #app .tabbar label[for="tab-nudo"] { background: rgba(168,138,68,.06); }
+
+#tab-teoria:checked    ~ #app .tabbar label[for="tab-teoria"] .tab-label,
+#tab-grisaille:checked ~ #app .tabbar label[for="tab-grisaille"] .tab-label,
+#tab-ombre:checked     ~ #app .tabbar label[for="tab-ombre"] .tab-label,
+#tab-cassel:checked    ~ #app .tabbar label[for="tab-cassel"] .tab-label,
+#tab-palette:checked   ~ #app .tabbar label[for="tab-palette"] .tab-label,
+#tab-nudo:checked      ~ #app .tabbar label[for="tab-nudo"] .tab-label { color: var(--gold); }
+
+#tab-teoria:checked    ~ #app .tabbar label[for="tab-teoria"]::before,
+#tab-grisaille:checked ~ #app .tabbar label[for="tab-grisaille"]::before,
+#tab-ombre:checked     ~ #app .tabbar label[for="tab-ombre"]::before,
+#tab-cassel:checked    ~ #app .tabbar label[for="tab-cassel"]::before,
+#tab-palette:checked   ~ #app .tabbar label[for="tab-palette"]::before,
+#tab-nudo:checked      ~ #app .tabbar label[for="tab-nudo"]::before {
+  content: '';
+  position: absolute; top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 28px; height: 2px;
+  background: var(--gold); border-radius: 2px;
+}
+
+/* ── Subnav (JS-powered, these still work via onclick) ── */
+.subnav-wrap {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg); padding: 10px 16px 8px;
+  margin: 0 -16px 16px;
+  border-bottom: 1px solid var(--gold-vf);
+  box-shadow: 0 2px 8px rgba(248,241,229,0.95);
+}
+.subnav { display: flex; gap: 8px; }
+
+/* ── Noise texture ── */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; opacity:.5;
+}
+
+/* ── Noise texture overlay ── */
+
+
+/* ── Layout ── */
+
+/* ── Header ── */
+
+.hdr-sup {
+  font-size: 9px; letter-spacing: .18em; color: var(--ink-ff);
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.hdr-title {
+  font-size: 20px; font-style: italic; font-weight: 500;
+  color: var(--ink-l); line-height: 1;
+}
+.hdr-line {
+  height: 1px; background: linear-gradient(90deg, transparent, var(--gold-l), transparent);
+  margin: 8px auto 0; width: 70%;
+}
+
+/* ── Tab bar ── */
+
+/* ── Sections ── */
+
+/* ── Section headers ── */
+.sec-head {
+  text-align: center; margin: 24px 0 6px;
+}
+.sec-head h2 {
+  font-size: 18px; font-weight: 600; color: var(--ink);
+  letter-spacing: .02em;
+}
+.sec-head .sub {
+  font-size: 12px; color: var(--ink-ff); font-style: italic;
+  margin-top: 4px;
+}
+.sec-divider {
+  height: 1px; margin: 8px auto 20px;
+  background: linear-gradient(90deg, transparent, var(--gold-l), transparent);
+  width: 80%;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--gold-vf);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(40,24,14,.06);
+}
+.card-title {
+  font-size: 13px; font-weight: 600; color: var(--ink);
+  margin-bottom: 4px; letter-spacing: .03em;
+}
+.card-sub {
+  font-size: 11px; color: var(--ink-ff); font-style: italic;
+  margin-bottom: 10px;
+}
+.card-
+
+/* ── Swatch row ── */
+.swatch-row {
+  display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto;
+  padding-bottom: 4px; margin: 10px 0 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.swatch-row::-webkit-scrollbar { display: none; }
+
+.swatch {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.swatch-w  { width: 52px; height: 44px; }
+.swatch-t  { width: 44px; height: 38px; }
+.swatch-sm { width: 34px; height: 28px; }
+.swatch-sq { width: 38px; height: 38px; }
+.swatch-lg { width: 64px; height: 56px; }
+
+.swatch-label {
+  font-size: 9.5px; color: var(--ink-f); text-align: center;
+  margin-top: 4px; line-height: 1.2;
+}
+.swatch-block { display: flex; flex-direction: column; align-items: center; }
+
+/* ── Mix formula ── */
+.mix-formula {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg2); border-radius: 8px;
+  padding: 8px 10px; margin-bottom: 8px;
+  flex-wrap: nowrap; overflow-x: auto;
+  scrollbar-width: none;
+}
+.mix-formula::-webkit-scrollbar { display: none; }
+.mix-op {
+  font-size: 16px; color: var(--ink-ff); font-weight: 300; flex-shrink: 0;
+}
+.mix-arrow {
+  color: var(--gold); font-size: 14px; flex-shrink: 0;
+}
+.mix-label {
+  font-size: 10px; color: var(--ink-f); font-style: italic; flex-shrink: 0;
+  white-space: nowrap;
+}
+.mix-ratio {
+  font-size: 9px; color: var(--ink-ff); text-align: center; margin-top: 2px;
+}
+
+/* ── Gradient bar ── */
+.gradient-bar {
+  height: 48px; border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  margin: 8px 0 4px;
+}
+.gradient-label {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--ink-ff); margin-bottom: 8px;
+}
+
+/* ── Value strip ── */
+.value-strip {
+  display: flex; gap: 3px; margin: 8px 0;
+}
+.value-strip .seg {
+  flex: 1; height: 36px; border-radius: 4px;
+}
+
+/* ── Step ── */
+.step {
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-bottom: 16px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--gold-vf);
+}
+.step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.step-num {
+  flex-shrink: 0; width: 36px; height: 36px;
+  border-radius: 50%; border: 1.5px solid var(--gold-l);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-style: italic; color: var(--gold);
+}
+.step-content { flex: 1; }
+.step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.step-
+
+/* ── HVC section ── */
+.hvc-grid {
+  display: flex; flex-direction: column; gap: 10px; margin: 12px 0;
+}
+.hvc-row {
+  background: var(--card); border: 1px solid var(--gold-vf);
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.hvc-row-label {
+  flex-shrink: 0; width: 80px; text-align: right;
+}
+.hvc-row-label h3 { font-size: 11px; font-weight: 600; color: var(--ink); }
+.hvc-row-label .eng { font-size: 8px; color: var(--ink-ff); letter-spacing: .06em; }
+.hvc-bars {
+  flex: 1; display: flex; flex-direction: column; gap: 3px;
+}
+.hvc-bar { height: 11px; border-radius: 3px; }
+.hvc-desc { font-size: 9px; color: var(--ink-f); line-height: 1.4; margin-top: 5px; font-style: italic; }
+.hvc-col { display: contents; }
+
+/* ── Colour wheel: now pure SVG, no JS, no canvas ── */
+.wheel-wrap { text-align: center; margin: 12px 0; }
+
+/* ── Complement table ── */
+.comp-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--gold-vf);
+}
+.comp-row:last-child { border-bottom: none; }
+.comp-name { font-size: 11px; color: var(--ink-f); min-width: 70px; }
+.comp-neutral { width: 28px; height: 24px; border-radius: 4px; flex-shrink: 0; }
+.comp-arrow { font-size: 11px; color: var(--ink-ff); flex-shrink: 0; }
+.comp-chip { width: 32px; height: 26px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+
+/* ── Properties table ── */
+.prop-row {
+  display: flex; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid var(--gold-vf); font-size: 11.5px;
+}
+.prop-row:last-child { border-bottom: none; }
+.prop-key { color: var(--ink); font-weight: 600; min-width: 100px; flex-shrink: 0; }
+.prop-val { color: var(--ink-f); line-height: 1.5; }
+
+/* ── Tip cards ── */
+.tip-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--card); border: 1px solid var(--gold-vf);
+  border-radius: var(--r); padding: 12px 14px; margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(40,24,14,.05);
+}
+.tip-num {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--gold-l);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-style: italic; color: var(--gold); margin-top: 1px;
+}
+.tip-
+.tip-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.tip-text { font-size: 11.5px; color: var(--ink-f); line-height: 1.6; }
+
+/* ── Palette foundation ── */
+.pal-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0;
+}
+.pal-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.pal-swatch {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.pal-name { font-size: 9px; color: var(--ink); text-align: center; line-height: 1.3; }
+.pal-pig  { font-size: 8px; color: var(--ink-ff); font-style: italic; }
+.pal-use  { font-size: 8px; color: var(--ink-ff); text-align: center; line-height: 1.3; }
+
+/* ── Infobox ── */
+.infobox {
+  background: var(--card2); border-left: 3px solid var(--gold-l);
+  border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0;
+  font-size: 12px; color: var(--ink-l); line-height: 1.6; font-style: italic;
+}
+
+/* ── Grey mixes ── */
+.grey-row {
+  display: flex; align-items: center; gap: 8px; padding: 10px 0;
+  border-bottom: 1px solid var(--gold-vf);
+}
+.grey-row:last-child { border-bottom: none; }
+.grey-chips { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.grey-recipe { flex: 1; font-size: 11px; font-style: italic; color: var(--ink-f); }
+.grey-result { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.grey-result .chip { width: 40px; height: 32px; border-radius: 5px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.grey-result .name { font-size: 9px; color: var(--ink-f); white-space: nowrap; }
+
+/* ── Scroll hint ── */
+.scroll-hint {
+  text-align: center; font-size: 9px; letter-spacing: .12em;
+  color: var(--ink-ff); margin: -8px 0 16px; text-transform: uppercase;
+}
+
+/* ── Page label ── */
+.page-label {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px;
+}
+.page-num {
+  font-size: 36px; font-style: italic; font-weight: 500; color: var(--gold-f);
+  line-height: 1;
+}
+.page-info h2 { font-size: 17px; font-weight: 600; }
+.page-info p  { font-size: 11px; color: var(--ink-ff); font-style: italic; margin-top: 2px; }
+
+/* ── Animations ── */
+ }
+
+/* ── Vdb chip scale ── */
+.vdb-scale { display: flex; gap: 6px; margin: 10px 0; }
+.vdb-scale .chip {
+  flex: 1; height: 52px; border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px;
+}
+.vdb-scale .chip span { font-size: 8px; color: rgba(255,255,255,.7); }
+
+/* ── Shadow scheme ── */
+.shadow-scheme { margin-bottom: 14px; }
+.shadow-scheme .label {
+  display: flex; justify-content: space-between;
+  font-size: 11px; margin-bottom: 4px;
+}
+.shadow-scheme .label .comp-tag {
+  font-size: 9px; font-style: italic; color: var(--gold);
+  background: rgba(168,138,68,.1); border-radius: 4px; padding: 1px 6px;
+}
+
+/* scrollbar global */
+* { scrollbar-width: thin; scrollbar-color: var(--gold-vf) transparent; }
+
+/* ── Subnav ── */
+
+.subnav { display: flex; gap: 8px; }
+.snav {
+  flex: 1; padding: 8px 0; border-radius: 8px;
+  border: 1.5px solid var(--gold-vf);
+  font-family: 'Lora', serif; font-size: 12px; font-style: italic;
+  color: var(--ink-f); background: transparent; cursor: pointer;
+  transition: all .18s; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
+}
+.snav.active {
+  background: var(--gold); border-color: var(--gold);
+  color: #fff; font-weight: 600;
+}
+
+/* ── Palette tematic card ── */
+.pal-card {
+  background: var(--card); border: 1px solid var(--gold-vf);
+  border-radius: var(--r); padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(40,24,14,.06);
+}
+.pal-card-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.pal-card-num {
+  font-size: 28px; font-style: italic; font-weight: 500;
+  color: var(--gold-f); line-height: 1; flex-shrink: 0; width: 36px;
+}
+.pal-card-title { font-size: 14px; font-weight: 600; }
+.pal-card-sub   { font-size: 10px; color: var(--ink-ff); font-style: italic; margin-top: 2px; }
+.pal-swatches-row {
+  display: flex; gap: 5px; margin-bottom: 12px;
+}
+.pal-sw {
+  flex: 1; height: 52px; border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.16);
+}
+.pal-sw-name {
+  font-size: 8px; text-align: center; color: var(--ink-ff);
+  margin-top: 3px; line-height: 1.2; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pal-mix-mini {
+  display: flex; flex-direction: column; gap: 5px;
+  border-top: 1px solid var(--gold-vf); padding-top: 10px;
+}
+.pal-mix-row {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; color: var(--ink-f);
+}
+.pal-mix-chip {
+  width: 28px; height: 24px; border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18); flex-shrink: 0;
+}
+.pal-mix-op  { font-size: 13px; color: var(--ink-ff); flex-shrink: 0; }
+.pal-mix-arr { color: var(--gold); flex-shrink: 0; }
+.pal-mix-lbl { flex: 1; font-style: italic; }
+
+/* ── WC pairs (warm/cool) ── */
+.wc-row {
+  display: flex; align-items: center; gap: 8px; padding: 7px 0;
+  border-bottom: 1px solid var(--gold-vf);
+}
+.wc-row:last-child { border-bottom: none; }
+.wc-chip { width: 38px; height: 32px; border-radius: 5px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.wc-neutral { width: 24px; height: 18px; border-radius: 3px; flex-shrink: 0; }
+.wc-name { font-size: 10px; color: var(--ink-f); flex: 1; line-height: 1.3; }
+
+/* ── Zone rows (figura) ── */
+.zone-row {
+  display: flex; align-items: center; gap: 8px; padding: 8px 0;
+  border-bottom: 1px solid var(--gold-vf);
+}
+.zone-row:last-child { border-bottom: none; }
+.zone-label { font-size: 11px; font-weight: 600; min-width: 100px; color: var(--ink); flex-shrink: 0; }
+.zone-chips { display: flex; gap: 4px; flex-shrink: 0; }
+.zone-chip  { width: 24px; height: 24px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.zone-note  { font-size: 10px; color: var(--ink-f); flex: 1; line-height: 1.4; font-style: italic; }
+
+/* ── Casorati palette ── */
+.ccm-group {
+  margin-bottom: 14px;
+}
+.ccm-group-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; font-style: italic;
+  color: var(--ink-l); letter-spacing: .04em;
+  padding: 10px 0 8px;
+  border-bottom: 1px solid var(--gold-vf);
+  margin-bottom: 10px;
+}
+.ccm-group-dot {
+  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.ccm-swatches {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+}
+.ccm-item {
+  background: var(--card); border: 1px solid var(--gold-vf);
+  border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 2px 6px rgba(40,24,14,.05);
+}
+.ccm-sw {
+  width: 100%; height: 54px; border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.1);
+  margin-bottom: 2px;
+}
+.ccm-name { font-size: 11px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.ccm-info { font-size: 9.5px; color: var(--ink-ff); font-style: italic; line-height: 1.4; }
+.ccm-use  { font-size: 10px; color: var(--ink-f); line-height: 1.4; border-top: 1px solid var(--gold-vf); padding-top: 4px; margin-top: 2px; }
+
+/* ══ SNAV RADIO NAVIGATION ══════════════════════════════════════════ */
+.snav-radio { display: none; }
+
+/* Palette sub-sections: hide all by default */
+#pal-mix, #pal-ten, #pal-casorati { display: none; }
+/* Radios are now before #app — use descendant selector */
+#pal-r-mix:checked      ~ #pal-mix      { display: block; }
+#pal-r-ten:checked      ~ #pal-ten      { display: block; }
+#pal-r-casorati:checked ~ #pal-casorati { display: block; }
+
+/* Nudo sub-sections: hide all by default */
+#nudo-incarnato, #nudo-zones, #nudo-tech { display: none; }
+/* Radios are now before #app — use descendant selector */
+#nudo-r-incarnato:checked ~ #nudo-incarnato { display: block; }
+#nudo-r-zones:checked     ~ #nudo-zones     { display: block; }
+#nudo-r-tech:checked      ~ #nudo-tech      { display: block; }
+
+/* Active label style for sub-nav */
+#pal-r-mix:checked      ~ .subnav-wrap label[for="pal-r-mix"],
+#pal-r-ten:checked      ~ .subnav-wrap label[for="pal-r-ten"],
+#pal-r-casorati:checked ~ .subnav-wrap label[for="pal-r-casorati"],
+#nudo-r-incarnato:checked ~ .subnav-wrap label[for="nudo-r-incarnato"],
+#nudo-r-zones:checked     ~ .subnav-wrap label[for="nudo-r-zones"],
+#nudo-r-tech:checked      ~ .subnav-wrap label[for="nudo-r-tech"] {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* snav label base style (mirrors old .snav button) */
+.snav {
+  flex: 1; padding: 8px 0; border-radius: 8px;
+  border: 1.5px solid var(--gold-vf);
+  font-family: 'Lora', serif; font-size: 12px; font-style: italic;
+  color: var(--ink-f); background: transparent;
+  cursor: pointer; text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
+  display: block;
+  -webkit-appearance: none; /* iOS fix */
+  position: relative; z-index: 10;
+}
+
+</style>
+</head>
+<body>
+
+<input type="radio" class="tab-radio" id="tab-teoria" name="tabs" checked>
+<input type="radio" class="tab-radio" id="tab-grisaille" name="tabs">
+<input type="radio" class="tab-radio" id="tab-ombre" name="tabs">
+<input type="radio" class="tab-radio" id="tab-cassel" name="tabs">
+<input type="radio" class="tab-radio" id="tab-palette" name="tabs">
+<input type="radio" class="tab-radio" id="tab-nudo" name="tabs">
+
+<div id="app">
+
+  <div class="hdr">
+    <div class="hdr-sup">Pittura ad Olio</div>
+    <div style="font-size:20px;font-style:italic;font-weight:500;color:var(--ink-l);line-height:1">Easy Recap</div>
+    <div style="height:1px;background:linear-gradient(90deg,transparent,var(--gold-l),transparent);margin:8px auto 0;width:70%"></div>
+  </div>
+
+  <div class="sections">
+<div class="section" id="s-teoria">
+<div class="page-label">
+    <div class="page-num">I</div>
+    <div class="page-info">
+      <h2>Teoria del Colore</h2>
+      <p>Hue · Value · Chroma · Complementari</p>
+    </div>
+  </div>
+
+  <!-- HVC -->
+  <div class="sec-head"><h2>I parametri fondamentali</h2><div class="sub">I tre attributi di ogni colore in pittura</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="hvc-grid">
+    <div class="hvc-row">
+      <div class="hvc-row-label">
+        <h3>Tonalità</h3>
+        <div class="eng">HUE</div>
+      </div>
+      <div class="hvc-bars">
+        <div class="hvc-bar" style="background:#dc3c28"></div>
+        <div class="hvc-bar" style="background:#d78c19"></div>
+        <div class="hvc-bar" style="background:#2da04b"></div>
+        <div class="hvc-bar" style="background:#1e64af"></div>
+        <div class="hvc-bar" style="background:#782896"></div>
+        <div class="hvc-bar" style="background:#af2364"></div>
+        <div class="hvc-desc">Il tipo di colore — rosso, giallo, blu.</div>
+      </div>
+    </div>
+    <div class="hvc-row">
+      <div class="hvc-row-label">
+        <h3>Valore</h3>
+        <div class="eng">VALUE</div>
+      </div>
+      <div class="hvc-bars">
+        <div class="hvc-bar" style="background:#f0e8d6;border:1px solid #ddd"></div>
+        <div class="hvc-bar" style="background:#c8baaa"></div>
+        <div class="hvc-bar" style="background:#9d8d78"></div>
+        <div class="hvc-bar" style="background:#706050"></div>
+        <div class="hvc-bar" style="background:#44382c"></div>
+        <div class="hvc-bar" style="background:#201810"></div>
+        <div class="hvc-desc">Luminosità — dalla luce all'ombra. Il parametro più critico.</div>
+      </div>
+    </div>
+    <div class="hvc-row">
+      <div class="hvc-row-label">
+        <h3>Saturazione</h3>
+        <div class="eng">CHROMA</div>
+      </div>
+      <div class="hvc-bars">
+        <div class="hvc-bar" style="background:#dc3c28"></div>
+        <div class="hvc-bar" style="background:#ca5850"></div>
+        <div class="hvc-bar" style="background:#b87370"></div>
+        <div class="hvc-bar" style="background:#a48c8a"></div>
+        <div class="hvc-bar" style="background:#909088"></div>
+        <div class="hvc-bar" style="background:#807c7c"></div>
+        <div class="hvc-desc">Intensità cromatica — da pieno (vivido) a neutro.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="infobox">
+    <strong>Regola pratica:</strong> La prima cosa da controllare nel tuo dipinto è sempre il <em>valore</em>, non il colore. Socchiudi gli occhi per vedere solo chiaro/scuro.
+  </div>
+
+  <!-- Colour Wheel -->
+  <div class="sec-head" style="margin-top:24px"><h2>II. Cerchio dei Complementari</h2><div class="sub">I colori opposti si neutralizzano e intensificano</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="wheel-wrap">
+    <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;display:block;margin:8px auto">
+<path d="M142.2 93.7 L119.6 9.3 A156.0 156.0 0 0 1 200.4 9.3 L177.8 93.7 A68.6 68.6 0 0 0 142.2 93.7Z" fill="#dc3c28" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="160.0" y="47.7" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Rosso</text>
+<path d="M177.8 93.7 L200.4 9.3 A156.0 156.0 0 0 1 270.3 49.7 L208.5 111.5 A68.6 68.6 0 0 0 177.8 93.7Z" fill="#d75f1e" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="216.2" y="62.7" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">R-Ar.</text>
+<path d="M208.5 111.5 L270.3 49.7 A156.0 156.0 0 0 1 310.7 119.6 L226.3 142.2 A68.6 68.6 0 0 0 208.5 111.5Z" fill="#d78c19" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="257.3" y="103.8" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Arancio</text>
+<path d="M226.3 142.2 L310.7 119.6 A156.0 156.0 0 0 1 310.7 200.4 L226.3 177.8 A68.6 68.6 0 0 0 226.3 142.2Z" fill="#d2bc18" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="272.3" y="160.0" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">G-Ar.</text>
+<path d="M226.3 177.8 L310.7 200.4 A156.0 156.0 0 0 1 270.3 270.3 L208.5 208.5 A68.6 68.6 0 0 0 226.3 177.8Z" fill="#c2c818" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="257.3" y="216.2" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Giallo</text>
+<path d="M208.5 208.5 L270.3 270.3 A156.0 156.0 0 0 1 200.4 310.7 L177.8 226.3 A68.6 68.6 0 0 0 208.5 208.5Z" fill="#6eb82d" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="216.2" y="257.3" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">G-V.</text>
+<path d="M177.8 226.3 L200.4 310.7 A156.0 156.0 0 0 1 119.6 310.7 L142.2 226.3 A68.6 68.6 0 0 0 177.8 226.3Z" fill="#2da04b" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="160.0" y="272.3" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Verde</text>
+<path d="M142.2 226.3 L119.6 310.7 A156.0 156.0 0 0 1 49.7 270.3 L111.5 208.5 A68.6 68.6 0 0 0 142.2 226.3Z" fill="#26917d" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="103.8" y="257.3" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">B-V.</text>
+<path d="M111.5 208.5 L49.7 270.3 A156.0 156.0 0 0 1 9.3 200.4 L93.7 177.8 A68.6 68.6 0 0 0 111.5 208.5Z" fill="#1e64af" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="62.7" y="216.2" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Blu</text>
+<path d="M93.7 177.8 L9.3 200.4 A156.0 156.0 0 0 1 9.3 119.6 L93.7 142.2 A68.6 68.6 0 0 0 93.7 177.8Z" fill="#373797" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="47.7" y="160.0" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">B-Vi.</text>
+<path d="M93.7 142.2 L9.3 119.6 A156.0 156.0 0 0 1 49.7 49.7 L111.5 111.5 A68.6 68.6 0 0 0 93.7 142.2Z" fill="#782896" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="62.7" y="103.8" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Viola</text>
+<path d="M111.5 111.5 L49.7 49.7 A156.0 156.0 0 0 1 119.6 9.3 L142.2 93.7 A68.6 68.6 0 0 0 111.5 111.5Z" fill="#af2364" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="103.8" y="62.7" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">R-Vi.</text>
+<circle cx="160" cy="160" r="68.6" fill="#f7f1e5" stroke="rgba(200,170,115,0.4)" stroke-width="1"/>
+<line x1="160.0" y1="101.7" x2="160.0" y2="218.3" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="189.2" y1="109.5" x2="130.8" y2="210.5" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="210.5" y1="130.8" x2="109.5" y2="189.2" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="218.3" y1="160.0" x2="101.7" y2="160.0" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="210.5" y1="189.2" x2="109.5" y2="130.8" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="189.2" y1="210.5" x2="130.8" y2="109.5" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<circle cx="160" cy="160" r="5" fill="rgba(168,138,68,0.65)"/>
+</svg>
+  </div>
+
+  <!-- Complement pairs -->
+  <div class="card">
+    <div class="card-title">Coppie complementari</div>
+    <div class="card-sub">Usare il complementare per le ombre — mai il nero puro</div>
+
+    <div class="comp-row">
+      <div class="comp-chip" style="background:#dc3c28"></div>
+      <div class="comp-name">Rosso</div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-neutral" style="background:#888060"></div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-chip" style="background:#2da04b"></div>
+      <div class="comp-name">Verde</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-chip" style="background:#d78c19"></div>
+      <div class="comp-name">Arancio</div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-neutral" style="background:#7878a0"></div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-chip" style="background:#1e64af"></div>
+      <div class="comp-name">Blu</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-chip" style="background:#c8c218"></div>
+      <div class="comp-name">Giallo</div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-neutral" style="background:#905588"></div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-chip" style="background:#782896"></div>
+      <div class="comp-name">Viola</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-chip" style="background:#6eba2d"></div>
+      <div class="comp-name">G-Verde</div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-neutral" style="background:#907060"></div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-chip" style="background:#af2364"></div>
+      <div class="comp-name">R-Viola</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-chip" style="background:#26917d"></div>
+      <div class="comp-name">B-Verde</div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-neutral" style="background:#907860"></div>
+      <div class="comp-arrow">↔</div>
+      <div class="comp-chip" style="background:#d75f1e"></div>
+      <div class="comp-name">R-Arancio</div>
+    </div>
+  </div>
+</div>
+<div class="section" id="s-grisaille">
+<div class="page-label">
+    <div class="page-num">II</div>
+    <div class="page-info">
+      <h2>Metodo Grisaille</h2>
+      <p>5 passi · Tavolozza tonale ridotta</p>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>III. Metodo Grisaille</h2><div class="sub">Costruire la forma in valori neutri prima di introdurre il colore</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="card">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <div class="step-title">Disegno e composizione</div>
+        <div class="step-body">Tracciare il soggetto a linee leggere. Stabilire le masse principali senza dettaglio. Solo le grandi forme che definiscono la struttura di luce e ombra.</div>
+        <div class="value-strip" style="margin-top:10px">
+          <div class="seg" style="background:#e4dcd0"></div>
+          <div class="seg" style="background:#c2b8a8"></div>
+          <div class="seg" style="background:#9c9080"></div>
+          <div class="seg" style="background:#707060"></div>
+          <div class="seg" style="background:#44403a"></div>
+          <div class="seg" style="background:#1c1814"></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <div class="step-title">Bloccare i valori</div>
+        <div class="step-body">Miscela classica: <strong>Terra d'ombra bruciata + Blu oltremare + Bianco</strong>. Stendere rapidamente le masse scure senza coprire le luci. Mappa chiaro/scuro in tre toni.</div>
+        <div class="value-strip" style="margin-top:10px">
+          <div class="seg" style="background:#e8ddc8"></div>
+          <div class="seg" style="background:#b4a490"></div>
+          <div class="seg" style="background:#7d6e5c"></div>
+          <div class="seg" style="background:#4b3e30"></div>
+          <div class="seg" style="background:#281e14"></div>
+          <div class="seg" style="background:#0f0a06"></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <div class="step-title">Definire le transizioni</div>
+        <div class="step-body">Lavorare i mezzitoni con pennellate fuse (sfumato). Mantenere la pittura fresca. Bianco per le luci; neutro denso per le ombre profonde. Bagnato su bagnato.</div>
+        <div class="value-strip" style="margin-top:10px">
+          <div class="seg" style="background:#f0e4d0"></div>
+          <div class="seg" style="background:#c8b898"></div>
+          <div class="seg" style="background:#9a8870"></div>
+          <div class="seg" style="background:#635848"></div>
+          <div class="seg" style="background:#342c22"></div>
+          <div class="seg" style="background:#14100a"></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-content">
+        <div class="step-title">Asciugatura e velature di colore</div>
+        <div class="step-body">Lasciare asciugare <strong>24–48 ore</strong>. Applicare velature trasparenti con colori puri diluiti in medium (1 olio + 1 trementina). La grisaille stabilizza i valori attraverso il colore.</div>
+        <div class="value-strip" style="margin-top:10px">
+          <div class="seg" style="background:#d8be70"></div>
+          <div class="seg" style="background:#b89830"></div>
+          <div class="seg" style="background:#90720e"></div>
+          <div class="seg" style="background:#684e06"></div>
+          <div class="seg" style="background:#3e2a04"></div>
+          <div class="seg" style="background:#1a1002"></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">05</div>
+      <div class="step-content">
+        <div class="step-title">Rifinitura con corpo</div>
+        <div class="step-body">Colore in pasta densa sulle luci assolute. Ultimi accenti: bianco puro sulle massime luci, nero cromatico nelle ombre più profonde. <strong>Non toccare i mezzitoni.</strong></div>
+        <div class="value-strip" style="margin-top:10px">
+          <div class="seg" style="background:#f2e6d8"></div>
+          <div class="seg" style="background:#c6af8c"></div>
+          <div class="seg" style="background:#987a50"></div>
+          <div class="seg" style="background:#604228"></div>
+          <div class="seg" style="background:#32200c"></div>
+          <div class="seg" style="background:#120802"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tavolozza ridotta -->
+  <div class="sec-head" style="margin-top:24px"><h2>IV. Tavolozza Ridotta Tonale</h2><div class="sub">Otto pigmenti essenziali per la pittura classica</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="pal-grid">
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#f0ece2; box-shadow: 0 3px 8px rgba(0,0,0,.18), inset 0 0 0 1px rgba(0,0,0,.08)"></div>
+      <div class="pal-name">Bianco Titanio</div>
+      <div class="pal-pig">PW 6</div>
+      <div class="pal-use">Schiarire valori</div>
+    </div>
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#eed282"></div>
+      <div class="pal-name">Giallo Napoli</div>
+      <div class="pal-pig">PY 41</div>
+      <div class="pal-use">Incarnati e luci calde</div>
+    </div>
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#cca248"></div>
+      <div class="pal-name">Giallo Ocra</div>
+      <div class="pal-pig">PY 43</div>
+      <div class="pal-use">Base terrosa universale</div>
+    </div>
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#d03c28"></div>
+      <div class="pal-name">Rosso Cadmio</div>
+      <div class="pal-pig">PR 108</div>
+      <div class="pal-use">Colori caldi puri</div>
+    </div>
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#8c1c30"></div>
+      <div class="pal-name">Alizarina Cremisi</div>
+      <div class="pal-pig">PR 83</div>
+      <div class="pal-use">Ombre calde trasparenti</div>
+    </div>
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#203080"></div>
+      <div class="pal-name">Blu Oltremare</div>
+      <div class="pal-pig">PB 29</div>
+      <div class="pal-use">Ombre e grigi cromatici</div>
+    </div>
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#a04e26"></div>
+      <div class="pal-name">T. Siena Bru.</div>
+      <div class="pal-pig">PBr 7</div>
+      <div class="pal-use">Ombre calde e terreni</div>
+    </div>
+    <div class="pal-item">
+      <div class="pal-swatch" style="background:#6c3e1e"></div>
+      <div class="pal-name">T. Ombra Bru.</div>
+      <div class="pal-pig">PBr 7</div>
+      <div class="pal-use">Ombre profonde e fondi</div>
+    </div>
+  </div>
+
+  <!-- Mix recipes -->
+  <div class="sec-head" style="margin-top:24px"><h2>Ricette essenziali</h2><div class="sub">Incarnati · Paesaggio · Scuri</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="card">
+    <div class="card-title">Flesh &amp; Skin Tones</div>
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">85%</div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#eed282"></div><div class="mix-ratio">15%</div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0d8a8"></div></div>
+      <div class="mix-label">Luce alta</div>
+    </div>
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div><div class="mix-ratio">60%</div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">40%</div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#b47838"></div></div>
+      <div class="mix-label">Mezzitono caldo</div>
+    </div>
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">70%</div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">30%</div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#7a4030"></div></div>
+      <div class="mix-label">Ombra glowing</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Earth &amp; Landscape</div>
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#307656"></div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#889040"></div></div>
+      <div class="mix-label">Verde oliva</div>
+    </div>
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#a0c0e8"></div></div>
+      <div class="mix-label">Cielo luminoso</div>
+    </div>
+  </div>
+</div>
+<div class="section" id="s-ombre">
+<div class="page-label">
+    <div class="page-num">III</div>
+    <div class="page-info">
+      <h2>Ombre &amp; Grigi</h2>
+      <p>Schemi con complementari · Grigi cromatici</p>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>V. Schemi di Ombra</h2><div class="sub">Usare il complementare al posto del nero</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="infobox">
+    <strong>Regola fondamentale:</strong> Il nero spegne il colore. Il complementare lo approfondisce mantenendo il chroma vivo. Preferire sempre il complementare.
+  </div>
+
+  <!-- Shadow schemes -->
+  <div class="card">
+
+    <div class="shadow-scheme">
+      <div class="label">
+        <strong>Superficie Rossa</strong>
+        <span class="comp-tag">+ Viridian</span>
+      </div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#e05038,#c04830,#983828,#7a3028,#582830,#3a2020)"></div>
+      <div class="gradient-label"><span>Rosso cadmio</span><span>Bruno caldo</span></div>
+      <div class="card-body">Viridian desatura verso un bruno caldo naturale. Rafforzare con terra di Siena bruciata.</div>
+    </div>
+
+    <div class="shadow-scheme" style="padding-top:12px;border-top:1px solid var(--gold-vf)">
+      <div class="label">
+        <strong>Superficie Gialla</strong>
+        <span class="comp-tag">+ Bl. Oltremare</span>
+      </div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#d2bc22,#b0a030,#8c8840,#686848,#464840,#283030)"></div>
+      <div class="gradient-label"><span>Giallo ocra</span><span>Verde/grigio</span></div>
+      <div class="card-body">Il complementare blu vira verso verde. Bilanciare con un tocco di ocra o terra bruciata.</div>
+    </div>
+
+    <div class="shadow-scheme" style="padding-top:12px;border-top:1px solid var(--gold-vf)">
+      <div class="label">
+        <strong>Superficie Blu</strong>
+        <span class="comp-tag">+ Arancio</span>
+      </div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#263c9b,#305880,#406068,#4a5858,#484040,#382818)"></div>
+      <div class="gradient-label"><span>Ultramarine</span><span>Grigio caldo</span></div>
+      <div class="card-body">Arancio (Cd Red + Ocra) crea grigi caldi profondi. Terra d'ombra per ombra più densa.</div>
+    </div>
+
+    <div class="shadow-scheme" style="padding-top:12px;border-top:1px solid var(--gold-vf)">
+      <div class="label">
+        <strong>Incarnato in ombra</strong>
+        <span class="comp-tag">+ traccia Bl. Ult.</span>
+      </div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#d7a573,#c0906a,#a87860,#8c6050,#6e4838,#4a2c1e)"></div>
+      <div class="gradient-label"><span>Carnato base</span><span>Ombra naturale</span></div>
+      <div class="card-body">Rosso + Ocra + Terra d'ombra bruciata. Traccia di blu per raffreddare l'ombra.</div>
+    </div>
+
+    <div class="shadow-scheme" style="padding-top:12px;border-top:1px solid var(--gold-vf)">
+      <div class="label">
+        <strong>Superficie Verde</strong>
+        <span class="comp-tag">+ Alizarina</span>
+      </div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#448c48,#607840,#726840,#6a5838,#524428,#38301a)"></div>
+      <div class="gradient-label"><span>Verde (Sap+CY)</span><span>Oliva neutro</span></div>
+      <div class="card-body">Alizarina desatura verso l'oliva. Terra d'ombra per le ombre più profonde.</div>
+    </div>
+
+    <div class="shadow-scheme" style="padding-top:12px;border-top:1px solid var(--gold-vf)">
+      <div class="label">
+        <strong>Superficie Viola</strong>
+        <span class="comp-tag">+ Giallo ocra</span>
+      </div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#763794,#786080,#726868,#6a6050,#585040,#402e28)"></div>
+      <div class="gradient-label"><span>Violetto (Al+Ul)</span><span>Bruno neutro</span></div>
+      <div class="card-body">Aggiungere giallo ocra o Napoli. La miscela diventa bruna-grigia: perfetta per ombre velate.</div>
+    </div>
+
+  </div>
+
+  <!-- Grigi cromatici -->
+  <div class="sec-head" style="margin-top:24px"><h2>VI. Cinque Grigi Cromatici</h2><div class="sub">Prepara sempre un grigio caldo e uno freddo</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="card">
+    <div class="grey-row">
+      <div class="grey-chips">
+        <div class="swatch swatch-sq" style="background:#203080"></div>
+        <span style="font-size:13px;color:var(--ink-ff)">+</span>
+        <div class="swatch swatch-sq" style="background:#a04e26"></div>
+      </div>
+      <div class="grey-recipe">Blu oltremare<br>+ Terra di Siena bru.</div>
+      <div class="grey-result">
+        <div class="chip" style="background:#5e4260"></div>
+        <div class="name">Grigio caldo</div>
+      </div>
+    </div>
+    <div class="grey-row">
+      <div class="grey-chips">
+        <div class="swatch swatch-sq" style="background:#203080"></div>
+        <span style="font-size:13px;color:var(--ink-ff)">+</span>
+        <div class="swatch swatch-sq" style="background:#307656"></div>
+      </div>
+      <div class="grey-recipe">Blu oltremare<br>+ Viridian</div>
+      <div class="grey-result">
+        <div class="chip" style="background:#285870"></div>
+        <div class="name">Grigio freddo</div>
+      </div>
+    </div>
+    <div class="grey-row">
+      <div class="grey-chips">
+        <div class="swatch swatch-sq" style="background:#8c1c30"></div>
+        <span style="font-size:13px;color:var(--ink-ff)">+</span>
+        <div class="swatch swatch-sq" style="background:#307656"></div>
+      </div>
+      <div class="grey-recipe">Alizarina cremisi<br>+ Viridian</div>
+      <div class="grey-result">
+        <div class="chip" style="background:#484838"></div>
+        <div class="name">Nero cromatico</div>
+      </div>
+    </div>
+    <div class="grey-row">
+      <div class="grey-chips">
+        <div class="swatch swatch-sq" style="background:#cca248"></div>
+        <span style="font-size:13px;color:var(--ink-ff)">+</span>
+        <div class="swatch swatch-sq" style="background:#203080"></div>
+      </div>
+      <div class="grey-recipe">Giallo ocra<br>+ Blu oltremare</div>
+      <div class="grey-result">
+        <div class="chip" style="background:#787860"></div>
+        <div class="name">Grigio-verde</div>
+      </div>
+    </div>
+    <div class="grey-row">
+      <div class="grey-chips">
+        <div class="swatch swatch-sq" style="background:#6c3e1e"></div>
+        <span style="font-size:13px;color:var(--ink-ff)">+</span>
+        <div class="swatch swatch-sq" style="background:#f0ece2;border:1px solid #ccc"></div>
+      </div>
+      <div class="grey-recipe">Terra d'ombra bru.<br>+ Bianco titanio</div>
+      <div class="grey-result">
+        <div class="chip" style="background:#baa890"></div>
+        <div class="name">Grisaille classic.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="section" id="s-cassel">
+<div class="page-label">
+    <div class="page-num">IV</div>
+    <div class="page-info">
+      <h2>Terra di Cassel</h2>
+      <p>Van Dyke Brown · Consigli pratici</p>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>VII. Terra di Cassel / Van Dyke Brown</h2><div class="sub">Il pigmento organico degli antichi maestri</div></div>
+  <div class="sec-divider"></div>
+
+  <!-- Main chip -->
+  <div class="card">
+    <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">
+      <div style="width:72px;height:72px;border-radius:10px;background:#3e2618;box-shadow:0 4px 12px rgba(0,0,0,.3);flex-shrink:0"></div>
+      <div>
+        <div style="font-size:16px;font-weight:600">Van Dyke Brown</div>
+        <div style="font-size:11px;color:var(--ink-ff);font-style:italic;margin-top:2px">Terra di Cassel · PBr 8</div>
+        <div style="font-size:11.5px;color:var(--ink-f);margin-top:6px;line-height:1.5">Bruno caldo scuro tra terra d'ombra bruciata e nero avorio.</div>
+      </div>
+    </div>
+    <!-- Lightened scale -->
+    <div style="font-size:10px;color:var(--ink-ff);margin-bottom:6px">Diluizione con Bianco titanio →</div>
+    <div class="vdb-scale">
+      <div class="chip" style="background:#3e2618"><span>+0%</span></div>
+      <div class="chip" style="background:#6a4832"><span>+15%</span></div>
+      <div class="chip" style="background:#947860"><span>+30%</span></div>
+      <div class="chip" style="background:#b8a080"><span>+50%</span></div>
+      <div class="chip" style="background:#d4c4a8"><span>+70%</span></div>
+    </div>
+  </div>
+
+  <!-- Properties -->
+  <div class="card">
+    <div class="card-title">Scheda pigmento</div>
+    <div class="prop-row"><div class="prop-key">Origine</div><div class="prop-val">Pigmento organico (torba lignite) · Germania, Kassel. In uso dal XVI sec.</div></div>
+    <div class="prop-row"><div class="prop-key">Caratteristiche</div><div class="prop-val">Trasparente · Essiccazione molto lenta · Tende a screpolarsi in strati spessi</div></div>
+    <div class="prop-row"><div class="prop-key">Tono</div><div class="prop-val">Bruno caldo scuro — perfetto per fondi, imprimiture e ombre velate</div></div>
+    <div class="prop-row"><div class="prop-key">Uso storico</div><div class="prop-val">Rembrandt · Rubens · Van Dyck · Fondi, ombre, modellazione carni</div></div>
+    <div class="prop-row"><div class="prop-key">⚠ Avvertenza</div><div class="prop-val">Non in strati spessi (cracking). Usare in velatura o con medium grasso.</div></div>
+  </div>
+
+  <!-- Substitutions -->
+  <div class="card">
+    <div class="card-title">Sostituzioni moderne</div>
+    <div class="card-sub">Per chi non ha il Van Dyke Brown in tavolozza</div>
+
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#3a2a30"></div></div>
+      <div class="mix-label">T.Ombra bru. + Bl.Oltremare</div>
+    </div>
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#4a2018"></div></div>
+      <div class="mix-label">T.Ombra bru. + Alizarina</div>
+    </div>
+    <div class="mix-formula">
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div>
+      <div class="mix-op">+</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#262320"></div></div>
+      <div class="mix-arrow">→</div>
+      <div class="swatch-block"><div class="swatch swatch-sm" style="background:#3c2014"></div></div>
+      <div class="mix-label">T.Ombra bru. + Nero avorio</div>
+    </div>
+  </div>
+
+  <!-- Practical tips -->
+  <div class="sec-head" style="margin-top:24px"><h2>VIII. Consigli Pratici</h2><div class="sub">Da tenere vicino mentre si dipinge</div></div>
+  <div class="sec-divider"></div>
+
+  <div class="tip-card">
+    <div class="tip-num">1</div>
+    <div class="tip-body">
+      <div class="tip-title">Fat over lean</div>
+      <div class="tip-text">Gli strati superiori devono contenere più olio degli inferiori. Primo strato: trementina pura. Strati successivi: aggiungere olio di lino progressivamente. Invertire causa cracking.</div>
+    </div>
+  </div>
+  <div class="tip-card">
+    <div class="tip-num">2</div>
+    <div class="tip-body">
+      <div class="tip-title">Prepara due grigi</div>
+      <div class="tip-text">Prima di iniziare, mescola un grigio caldo (Blu Olt.+Siena bru.) e uno freddo (Blu Olt.+Viridian). Usali come modulatori delle ombre senza mescolare ogni volta.</div>
+    </div>
+  </div>
+  <div class="tip-card">
+    <div class="tip-num">3</div>
+    <div class="tip-body">
+      <div class="tip-title">Mai più di tre pigmenti</div>
+      <div class="tip-text">Ogni miscela con più di tre pigmenti tende al fango. Testa sul bordo della tavolozza prima di applicare. Semplifica sempre: meno è meglio.</div>
+    </div>
+  </div>
+  <div class="tip-card">
+    <div class="tip-num">4</div>
+    <div class="tip-body">
+      <div class="tip-title">Luci corpo / ombre velatura</div>
+      <div class="tip-text">Le luci si dipingono con pasta densa (impasto). Le ombre rimangono trasparenti e sottili. Invertire questa regola appiattisce il dipinto.</div>
+    </div>
+  </div>
+  <div class="tip-card">
+    <div class="tip-num">5</div>
+    <div class="tip-body">
+      <div class="tip-title">Supporto colorato</div>
+      <div class="tip-text">Imprimitura ocra, Siena o grigio aiuta a leggere luci e ombre. Mai dipingere su bianco puro: falsifica la lettura dei valori.</div>
+    </div>
+  </div>
+  <div class="tip-card">
+    <div class="tip-num">6</div>
+    <div class="tip-body">
+      <div class="tip-title">Valore prima del colore</div>
+      <div class="tip-text">Se il valore è corretto, il colore perdona tutto. Se il valore è sbagliato, nessun colore salva il dipinto. Controlla con occhi socchiusi o fotografia in bianco e nero.</div>
+    </div>
+  </div>
+  <div class="tip-card">
+    <div class="tip-num">7</div>
+    <div class="tip-body">
+      <div class="tip-title">Complementare per le ombre</div>
+      <div class="tip-text">Prima di aggiungere nero: prova il complementare. Rosso → viridian. Giallo → blu. Blu → arancio. L'ombra rimane cromaticamente viva e profonda.</div>
+    </div>
+  </div>
+  <div class="tip-card">
+    <div class="tip-num">8</div>
+    <div class="tip-body">
+      <div class="tip-title">Tempistica e medium</div>
+      <div class="tip-text">Olio puro: lento ma robusto. Trementina: accelera ma indebolisce. Medium bilanciato: 1 parte olio + 1 parte trementina per i primi strati; olio puro per le finiture.</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin:28px 0 8px;font-size:10px;font-style:italic;color:var(--ink-ff);line-height:1.8">
+    Alla maniera degli antichi maestri<br>
+    Olio su tela · Trust your eye above all formulas<br>
+    © Pittura ad Olio Easy Recap
+  </div>
+</div>
+<div class="section" id="s-palette">
+<div class="page-label">
+    <div class="page-num">V</div>
+    <div class="page-info">
+      <h2>Color Mixing Guide</h2>
+      <p>10 Palette tematiche · Ricette · Scale</p>
+    </div>
+  </div>
+
+  <input type="radio" class="snav-radio" id="pal-r-mix"      name="pal-tabs" checked>
+  <input type="radio" class="snav-radio" id="pal-r-ten"      name="pal-tabs">
+  <input type="radio" class="snav-radio" id="pal-r-casorati" name="pal-tabs">
+  <div class="subnav-wrap">
+    <div class="subnav">
+      <label class="snav" for="pal-r-mix" onclick="document.getElementById('pal-r-mix').checked=true">Guide Miscela</label>
+      <label class="snav" for="pal-r-ten" onclick="document.getElementById('pal-r-ten').checked=true">10 Palette</label>
+      <label class="snav" for="pal-r-casorati" onclick="document.getElementById('pal-r-casorati').checked=true">Casorati</label>
+    </div>
+  </div>
+
+  <!-- ── A: MIXING GUIDE ── -->
+  <div id="pal-mix">
+
+    <div class="sec-head"><h2>Paletta di fondazione</h2><div class="sub">8 pigmenti essenziali per la pittura classica</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="pal-grid">
+      <div class="pal-item"><div class="pal-swatch" style="background:#f0ece2;box-shadow:0 3px 8px rgba(0,0,0,.18),inset 0 0 0 1px rgba(0,0,0,.1)"></div><div class="pal-name">Titanium White</div><div class="pal-pig">PW 6</div><div class="pal-use">Schiarire valori</div></div>
+      <div class="pal-item"><div class="pal-swatch" style="background:#262320"></div><div class="pal-name">Ivory Black</div><div class="pal-pig">PBk 9</div><div class="pal-use">Solo misto — mai puro</div></div>
+      <div class="pal-item"><div class="pal-swatch" style="background:#cca248"></div><div class="pal-name">Yellow Ochre</div><div class="pal-pig">PY 43</div><div class="pal-use">Base universale</div></div>
+      <div class="pal-item"><div class="pal-swatch" style="background:#a04e26"></div><div class="pal-name">Burnt Sienna</div><div class="pal-pig">PBr 7</div><div class="pal-use">Ombre calde</div></div>
+      <div class="pal-item"><div class="pal-swatch" style="background:#6c3e1e"></div><div class="pal-name">Burnt Umber</div><div class="pal-pig">PBr 7</div><div class="pal-use">Ombre profonde</div></div>
+      <div class="pal-item"><div class="pal-swatch" style="background:#8c1c30"></div><div class="pal-name">Alizarin Crimson</div><div class="pal-pig">PR 83</div><div class="pal-use">Velature trasparenti</div></div>
+      <div class="pal-item"><div class="pal-swatch" style="background:#203080"></div><div class="pal-name">Ultramarine</div><div class="pal-pig">PB 29</div><div class="pal-use">Grigi cromatici</div></div>
+      <div class="pal-item"><div class="pal-swatch" style="background:#307656"></div><div class="pal-name">Viridian</div><div class="pal-pig">PG 18</div><div class="pal-use">Complementare rosso</div></div>
+    </div>
+
+    <div class="sec-head" style="margin-top:22px"><h2>Ricette di miscela</h2><div class="sub">Flesh · Earth · Darks</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="card">
+      <div class="card-title">🎨 Flesh &amp; Skin Tones</div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">88%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div><div class="mix-ratio">12%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0d8a8"></div></div><div class="mix-label">Light Flesh</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div><div class="mix-ratio">60%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">40%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#b47838"></div></div><div class="mix-label">Warm Midtone</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">70%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">30%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#7a4030"></div></div><div class="mix-label">Glowing Shadow</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">92%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div><div class="mix-ratio">8%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ccc0"></div></div><div class="mix-label">Rosy Flush</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🌿 Earth &amp; Landscape</div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div><div class="mix-ratio">70%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#307656"></div><div class="mix-ratio">30%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#889040"></div></div><div class="mix-label">Olive Ground</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div><div class="mix-ratio">60%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div><div class="mix-ratio">40%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#946030"></div></div><div class="mix-label">Warm Earth</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">80%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">20%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a0c0e8"></div></div><div class="mix-label">Sky Blue</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#4e7028"></div><div class="mix-ratio">65%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div><div class="mix-ratio">35%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#4e5830"></div></div><div class="mix-label">Forest Shadow</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">◼ Darks &amp; Neutrals</div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#262320"></div><div class="mix-ratio">60%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div><div class="mix-ratio">40%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#402818"></div></div><div class="mix-label">Warm Black</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">65%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">35%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a0b0c8"></div></div><div class="mix-label">Cool Grey</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">50%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">50%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#5a4850"></div></div><div class="mix-label">Neutral Brown</div></div>
+      <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div><div class="mix-ratio">50%</div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">50%</div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#502058"></div></div><div class="mix-label">Deep Violet</div></div>
+    </div>
+
+    <!-- Warm/Cool pairs -->
+    <div class="sec-head" style="margin-top:22px"><h2>Contrasto Caldo · Freddo</h2><div class="sub">Opposti che si neutralizzano</div></div>
+    <div class="sec-divider"></div>
+    <div class="card" id="wc-card"></div>
+
+    <!-- Value scale -->
+    <div class="sec-head" style="margin-top:22px"><h2>Scala Tonale</h2><div class="sub">Titanium White → Ivory Black</div></div>
+    <div class="sec-divider"></div>
+    <div class="card">
+      <div class="value-strip" style="gap:4px;height:48px">
+        <div class="seg" style="background:#f0ece2;border:1px solid #ddd"></div>
+        <div class="seg" style="background:#d4cec4"></div>
+        <div class="seg" style="background:#b8b0a5"></div>
+        <div class="seg" style="background:#9c9285"></div>
+        <div class="seg" style="background:#817565"></div>
+        <div class="seg" style="background:#675a48"></div>
+        <div class="seg" style="background:#4e4032"></div>
+        <div class="seg" style="background:#38291e"></div>
+        <div class="seg" style="background:#261810"></div>
+        <div class="seg" style="background:#262320"></div>
+      </div>
+      <div class="gradient-label" style="margin-top:8px"><span>Titanium White</span><span>Ivory Black</span></div>
+    </div>
+
+    <!-- Temperature progressions -->
+    <div class="sec-head" style="margin-top:22px"><h2>Progressioni di Temperatura</h2></div>
+    <div class="sec-divider"></div>
+    <div class="card">
+      <div style="font-size:10px;color:var(--ink-ff);margin-bottom:4px;font-style:italic">Warm · Luce → Ombra</div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#eed282,#d48030,#a04e26,#6c3e1e,#4a2a10)"></div>
+      <div class="gradient-label"><span>Naples Yellow</span><span>Burnt Umber</span></div>
+      <div style="font-size:10px;color:var(--ink-ff);margin-bottom:4px;margin-top:14px;font-style:italic">Cool · Cielo</div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#f0ece2,#b0c8e0,#6496c8,#3064a8,#203080)"></div>
+      <div class="gradient-label"><span>Titanium White</span><span>Ultramarine</span></div>
+      <div style="font-size:10px;color:var(--ink-ff);margin-bottom:4px;margin-top:14px;font-style:italic">Earth · Paesaggio</div>
+      <div class="gradient-bar" style="background:linear-gradient(to right,#e8c418,#cca248,#b07838,#886028,#5f3e18)"></div>
+      <div class="gradient-label"><span>Cadmium Yellow</span><span>Raw Umber</span></div>
+    </div>
+
+    <!-- Opacity & Medium -->
+    <div class="sec-head" style="margin-top:22px"><h2>Opacità &amp; Medium</h2></div>
+    <div class="sec-divider"></div>
+    <div class="card">
+      <div class="prop-row"><div class="prop-key" style="min-width:110px">Trasparenti</div><div class="prop-val">Alizarin · Prussian · Viridian · Raw Umber</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:110px">Opachi</div><div class="prop-val">Titanium White · Cadmium Red · Naples Yellow</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:110px">Semi-traspar.</div><div class="prop-val">Burnt Sienna · Yellow Ochre · Ultramarine</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:110px">Linseed Oil</div><div class="prop-val">Lento · tono caldo · flusso aumentato</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:110px">Walnut Oil</div><div class="prop-val">Lento · palissandro · per bianchi e luci</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:110px">Trementina</div><div class="prop-val">Veloce · magro · solo primi strati</div></div>
+    </div>
+
+  </div><!-- /pal-mix -->
+
+  <!-- ── B: 10 PALETTES ── -->
+  <div id="pal-ten">
+    <div class="sec-head"><h2>10 Palette Tematiche</h2><div class="sub">Ogni soggetto con colori base e 3 ricette</div></div>
+    <div class="sec-divider"></div>
+    <div id="palette-list">
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">01</div><div><div class="pal-card-title">Incarnato Chiaro</div><div class="pal-card-sub">Carnagioni chiare · Fair & pale skin</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#f0ece2"></div><div class="pal-sw-name">Tit. White</div></div><div><div class="pal-sw" style="background:#eed282"></div><div class="pal-sw-name">Naples Yel.</div></div><div><div class="pal-sw" style="background:#cca248"></div><div class="pal-sw-name">Yel. Ochre</div></div><div><div class="pal-sw" style="background:#bc7832"></div><div class="pal-sw-name">Raw Sienna</div></div><div><div class="pal-sw" style="background:#8c1c30"></div><div class="pal-sw-name">Alizarin</div></div><div><div class="pal-sw" style="background:#a04e26"></div><div class="pal-sw-name">Burnt Sienna</div></div><div><div class="pal-sw" style="background:#203080"></div><div class="pal-sw-name">Ultramarine</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">85%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#eed282"></div><div style="font-size:9px;color:var(--ink-ff)">15%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#efe8d3"></div><div class="pal-mix-lbl">Luce alta</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#cca248"></div><div style="font-size:9px;color:var(--ink-ff)">60%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#bc7832"></div><div style="font-size:9px;color:var(--ink-ff)">40%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#c5913f"></div><div class="pal-mix-lbl">Mezzitoni</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#a04e26"></div><div style="font-size:9px;color:var(--ink-ff)">65%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#203080"></div><div style="font-size:9px;color:var(--ink-ff)">35%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#734345"></div><div class="pal-mix-lbl">Ombra fredda</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">02</div><div><div class="pal-card-title">Incarnato Scuro</div><div class="pal-card-sub">Carnagioni medie e profonde · Deep skin</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#cca248"></div><div class="pal-sw-name">Yel. Ochre</div></div><div><div class="pal-sw" style="background:#bc7832"></div><div class="pal-sw-name">Raw Sienna</div></div><div><div class="pal-sw" style="background:#a04e26"></div><div class="pal-sw-name">Burnt Sienna</div></div><div><div class="pal-sw" style="background:#6c3e1e"></div><div class="pal-sw-name">Burnt Umber</div></div><div><div class="pal-sw" style="background:#d03c28"></div><div class="pal-sw-name">Cadmium Red</div></div><div><div class="pal-sw" style="background:#5e4a30"></div><div class="pal-sw-name">Raw Umber</div></div><div><div class="pal-sw" style="background:#203080"></div><div class="pal-sw-name">Ultramarine</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#cca248"></div><div style="font-size:9px;color:var(--ink-ff)">75%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#d03c28"></div><div style="font-size:9px;color:var(--ink-ff)">25%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#cd8840"></div><div class="pal-mix-lbl">Midtone caldo</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#a04e26"></div><div style="font-size:9px;color:var(--ink-ff)">55%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#6c3e1e"></div><div style="font-size:9px;color:var(--ink-ff)">45%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#884622"></div><div class="pal-mix-lbl">Tono base</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#6c3e1e"></div><div style="font-size:9px;color:var(--ink-ff)">55%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#203080"></div><div style="font-size:9px;color:var(--ink-ff)">45%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#49374a"></div><div class="pal-mix-lbl">Ombra profonda</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">03</div><div><div class="pal-card-title">Fogliame & Piante</div><div class="pal-card-sub">Verde naturale · Natural foliage</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#e8c418"></div><div class="pal-sw-name">Cad. Yellow</div></div><div><div class="pal-sw" style="background:#cca248"></div><div class="pal-sw-name">Yel. Ochre</div></div><div><div class="pal-sw" style="background:#4e7028"></div><div class="pal-sw-name">Sap Green</div></div><div><div class="pal-sw" style="background:#307656"></div><div class="pal-sw-name">Viridian</div></div><div><div class="pal-sw" style="background:#828c3c"></div><div class="pal-sw-name">Olive mix</div></div><div><div class="pal-sw" style="background:#6c3e1e"></div><div class="pal-sw-name">Burnt Umber</div></div><div><div class="pal-sw" style="background:#262320"></div><div class="pal-sw-name">Ivory Black</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#e8c418"></div><div style="font-size:9px;color:var(--ink-ff)">65%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#307656"></div><div style="font-size:9px;color:var(--ink-ff)">35%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#a7a82d"></div><div class="pal-mix-lbl">Foglia chiara</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#4e7028"></div><div style="font-size:9px;color:var(--ink-ff)">60%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#cca248"></div><div style="font-size:9px;color:var(--ink-ff)">40%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#808434"></div><div class="pal-mix-lbl">Verde terroso</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#307656"></div><div style="font-size:9px;color:var(--ink-ff)">55%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#6c3e1e"></div><div style="font-size:9px;color:var(--ink-ff)">45%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#4b5c3c"></div><div class="pal-mix-lbl">Ombra foglia</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">04</div><div><div class="pal-card-title">Cielo Diurno</div><div class="pal-card-sub">Azzurro atmosferico · Daytime sky</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#f0ece2"></div><div class="pal-sw-name">Tit. White</div></div><div><div class="pal-sw" style="background:#eed282"></div><div class="pal-sw-name">Naples Yel.</div></div><div><div class="pal-sw" style="background:#3064a8"></div><div class="pal-sw-name">Cobalt Blue</div></div><div><div class="pal-sw" style="background:#203080"></div><div class="pal-sw-name">Ultramarine</div></div><div><div class="pal-sw" style="background:#004a5a"></div><div class="pal-sw-name">Prussian Blue</div></div><div><div class="pal-sw" style="background:#c8d0d8"></div><div class="pal-sw-name">Cloud grey</div></div><div><div class="pal-sw" style="background:#a0c4e4"></div><div class="pal-sw-name">Cerulean mix</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">82%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#3064a8"></div><div style="font-size:9px;color:var(--ink-ff)">18%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#cdd3d7"></div><div class="pal-mix-lbl">Orizzonte</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">72%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#203080"></div><div style="font-size:9px;color:var(--ink-ff)">28%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#b5b7c6"></div><div class="pal-mix-lbl">Zenit</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">60%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#c8d0d8"></div><div style="font-size:9px;color:var(--ink-ff)">40%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#e0e0de"></div><div class="pal-mix-lbl">Nuvola ombra</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">05</div><div><div class="pal-card-title">Tramonto & Ora d'Oro</div><div class="pal-card-sub">Golden hour · Sunset atmosphere</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#f0ece2"></div><div class="pal-sw-name">Tit. White</div></div><div><div class="pal-sw" style="background:#eed282"></div><div class="pal-sw-name">Naples Yel.</div></div><div><div class="pal-sw" style="background:#e8c418"></div><div class="pal-sw-name">Cad. Yellow</div></div><div><div class="pal-sw" style="background:#d48030"></div><div class="pal-sw-name">Amber mix</div></div><div><div class="pal-sw" style="background:#d03c28"></div><div class="pal-sw-name">Cadmium Red</div></div><div><div class="pal-sw" style="background:#8c1c30"></div><div class="pal-sw-name">Alizarin</div></div><div><div class="pal-sw" style="background:#203080"></div><div class="pal-sw-name">Ultramarine</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#e8c418"></div><div style="font-size:9px;color:var(--ink-ff)">70%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#eed282"></div><div style="font-size:9px;color:var(--ink-ff)">30%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#e9c837"></div><div class="pal-mix-lbl">Bagliore dorato</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#eed282"></div><div style="font-size:9px;color:var(--ink-ff)">60%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#d03c28"></div><div style="font-size:9px;color:var(--ink-ff)">40%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#e2965e"></div><div class="pal-mix-lbl">Rosa tramonto</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#8c1c30"></div><div style="font-size:9px;color:var(--ink-ff)">60%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#203080"></div><div style="font-size:9px;color:var(--ink-ff)">40%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#602450"></div><div class="pal-mix-lbl">Viola crepuscolo</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">06</div><div><div class="pal-card-title">Mare & Acque</div><div class="pal-card-sub">Azzurro marino · Sea & moving water</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#f0ece2"></div><div class="pal-sw-name">Tit. White</div></div><div><div class="pal-sw" style="background:#a0c4e4"></div><div class="pal-sw-name">Cerulean</div></div><div><div class="pal-sw" style="background:#3064a8"></div><div class="pal-sw-name">Cobalt Blue</div></div><div><div class="pal-sw" style="background:#307656"></div><div class="pal-sw-name">Viridian</div></div><div><div class="pal-sw" style="background:#004a5a"></div><div class="pal-sw-name">Prussian Blue</div></div><div><div class="pal-sw" style="background:#1c4468"></div><div class="pal-sw-name">Deep ocean</div></div><div><div class="pal-sw" style="background:#e4f0f4"></div><div class="pal-sw-name">Sea foam</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">78%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#307656"></div><div style="font-size:9px;color:var(--ink-ff)">22%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#c5d2c3"></div><div class="pal-mix-lbl">Acqua bassa</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#3064a8"></div><div style="font-size:9px;color:var(--ink-ff)">60%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#004a5a"></div><div style="font-size:9px;color:var(--ink-ff)">40%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#1c5988"></div><div class="pal-mix-lbl">Mare aperto</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#004a5a"></div><div style="font-size:9px;color:var(--ink-ff)">65%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#262320"></div><div style="font-size:9px;color:var(--ink-ff)">35%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#0d3c45"></div><div class="pal-mix-lbl">Profondità</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">07</div><div><div class="pal-card-title">Terra & Paesaggio</div><div class="pal-card-sub">Toni terrosi · Earth, stone & soil</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#cca248"></div><div class="pal-sw-name">Yel. Ochre</div></div><div><div class="pal-sw" style="background:#bc7832"></div><div class="pal-sw-name">Raw Sienna</div></div><div><div class="pal-sw" style="background:#a04e26"></div><div class="pal-sw-name">Burnt Sienna</div></div><div><div class="pal-sw" style="background:#6c3e1e"></div><div class="pal-sw-name">Burnt Umber</div></div><div><div class="pal-sw" style="background:#5e4a30"></div><div class="pal-sw-name">Raw Umber</div></div><div><div class="pal-sw" style="background:#8c9878"></div><div class="pal-sw-name">Sage grey</div></div><div><div class="pal-sw" style="background:#262320"></div><div class="pal-sw-name">Ivory Black</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#cca248"></div><div style="font-size:9px;color:var(--ink-ff)">65%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#5e4a30"></div><div style="font-size:9px;color:var(--ink-ff)">35%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#a5833f"></div><div class="pal-mix-lbl">Terra asciutta</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#a04e26"></div><div style="font-size:9px;color:var(--ink-ff)">55%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#6c3e1e"></div><div style="font-size:9px;color:var(--ink-ff)">45%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#884622"></div><div class="pal-mix-lbl">Terreno umido</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#6c3e1e"></div><div style="font-size:9px;color:var(--ink-ff)">70%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#262320"></div><div style="font-size:9px;color:var(--ink-ff)">30%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#57351e"></div><div class="pal-mix-lbl">Roccia scura</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">08</div><div><div class="pal-card-title">Fiori & Petali</div><div class="pal-card-sub">Colori florali · Flowers & botanical</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#eed282"></div><div class="pal-sw-name">Naples Yel.</div></div><div><div class="pal-sw" style="background:#e8c418"></div><div class="pal-sw-name">Cad. Yellow</div></div><div><div class="pal-sw" style="background:#d03c28"></div><div class="pal-sw-name">Cadmium Red</div></div><div><div class="pal-sw" style="background:#8c1c30"></div><div class="pal-sw-name">Alizarin</div></div><div><div class="pal-sw" style="background:#a05096"></div><div class="pal-sw-name">Orchid mix</div></div><div><div class="pal-sw" style="background:#9b78b8"></div><div class="pal-sw-name">Lavender</div></div><div><div class="pal-sw" style="background:#307656"></div><div class="pal-sw-name">Viridian</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">78%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#8c1c30"></div><div style="font-size:9px;color:var(--ink-ff)">22%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#dabeba"></div><div class="pal-mix-lbl">Rosa antico</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#d03c28"></div><div style="font-size:9px;color:var(--ink-ff)">65%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#eed282"></div><div style="font-size:9px;color:var(--ink-ff)">35%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#da7047"></div><div class="pal-mix-lbl">Petalo caldo</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#8c1c30"></div><div style="font-size:9px;color:var(--ink-ff)">55%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#9b78b8"></div><div style="font-size:9px;color:var(--ink-ff)">45%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#92456d"></div><div class="pal-mix-lbl">Violaceo</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">09</div><div><div class="pal-card-title">Ombre & Luci Neutre</div><div class="pal-card-sub">Grigi pittorici · Chromatic neutrals</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#f0ece2"></div><div class="pal-sw-name">Tit. White</div></div><div><div class="pal-sw" style="background:#eed282"></div><div class="pal-sw-name">Naples Yel.</div></div><div><div class="pal-sw" style="background:#cca248"></div><div class="pal-sw-name">Yel. Ochre</div></div><div><div class="pal-sw" style="background:#a04e26"></div><div class="pal-sw-name">Burnt Sienna</div></div><div><div class="pal-sw" style="background:#203080"></div><div class="pal-sw-name">Ultramarine</div></div><div><div class="pal-sw" style="background:#6c3e1e"></div><div class="pal-sw-name">Burnt Umber</div></div><div><div class="pal-sw" style="background:#262320"></div><div class="pal-sw-name">Ivory Black</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">78%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#203080"></div><div style="font-size:9px;color:var(--ink-ff)">22%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#c2c2cc"></div><div class="pal-mix-lbl">Ombra fredda</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#a04e26"></div><div style="font-size:9px;color:var(--ink-ff)">50%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#203080"></div><div style="font-size:9px;color:var(--ink-ff)">50%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#603f53"></div><div class="pal-mix-lbl">Neutro pittore</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">90%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#cca248"></div><div style="font-size:9px;color:var(--ink-ff)">10%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#ece4d2"></div><div class="pal-mix-lbl">Luce calda</div></div></div></div>
+<div class="pal-card"><div class="pal-card-header"><div class="pal-card-num">10</div><div><div class="pal-card-title">Notte & Crepuscolo</div><div class="pal-card-sub">Scuri profondi · Night sky & deep shadow</div></div></div><div class="pal-swatches-row"><div><div class="pal-sw" style="background:#004a5a"></div><div class="pal-sw-name">Prussian Blue</div></div><div><div class="pal-sw" style="background:#203080"></div><div class="pal-sw-name">Ultramarine</div></div><div><div class="pal-sw" style="background:#12183a"></div><div class="pal-sw-name">Night sky</div></div><div><div class="pal-sw" style="background:#6c3e1e"></div><div class="pal-sw-name">Burnt Umber</div></div><div><div class="pal-sw" style="background:#262320"></div><div class="pal-sw-name">Ivory Black</div></div><div><div class="pal-sw" style="background:#e8e4d0"></div><div class="pal-sw-name">Moonlight</div></div><div><div class="pal-sw" style="background:#5a3c72"></div><div class="pal-sw-name">Dusk violet</div></div></div><div class="pal-mix-mini"><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#004a5a"></div><div style="font-size:9px;color:var(--ink-ff)">60%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#262320"></div><div style="font-size:9px;color:var(--ink-ff)">40%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#0f3a42"></div><div class="pal-mix-lbl">Cielo notturno</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#f0ece2"></div><div style="font-size:9px;color:var(--ink-ff)">88%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#e8e4d0"></div><div style="font-size:9px;color:var(--ink-ff)">12%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#efebdf"></div><div class="pal-mix-lbl">Chiaro di luna</div></div><div class="pal-mix-row"><div class="pal-mix-chip" style="background:#5a3c72"></div><div style="font-size:9px;color:var(--ink-ff)">55%</div><div class="pal-mix-op">+</div><div class="pal-mix-chip" style="background:#203080"></div><div style="font-size:9px;color:var(--ink-ff)">45%</div><div class="pal-mix-arr">→</div><div class="pal-mix-chip" style="background:#3f3678"></div><div class="pal-mix-lbl">Viola notte</div></div></div></div>
+</div>
+  </div>
+
+  <!-- ── C: CASORATI-CEFALY-MARZIANO ── -->
+  <div id="pal-casorati">
+
+    <div class="sec-head"><h2>Tavolozza Casorati</h2><div class="sub">Casorati · Cefaly · Marziano — paletta accademica italiana</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      18 pigmenti organizzati per famiglia cromatica — gialli, rossi, blu, terre, neutri. Una struttura accademica italiana che copre l'intera gamma con colori di alta qualità e comprovata stabilità.
+    </div>
+
+    <!-- Cerchio cromatico -->
+    <div class="sec-head" style="margin-top:18px"><h2>Cerchio cromatico</h2><div class="sub">Complementari e relazioni tra i colori della tavolozza</div></div>
+    <div class="sec-divider"></div>
+    <div class="wheel-wrap">
+      <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:300px;display:block;margin:8px auto">
+<path d="M142.2 93.7 L119.6 9.3 A156.0 156.0 0 0 1 200.4 9.3 L177.8 93.7 A68.6 68.6 0 0 0 142.2 93.7Z" fill="#dc3c28" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="160.0" y="47.7" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Rosso</text>
+<path d="M177.8 93.7 L200.4 9.3 A156.0 156.0 0 0 1 270.3 49.7 L208.5 111.5 A68.6 68.6 0 0 0 177.8 93.7Z" fill="#d75f1e" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="216.2" y="62.7" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">R-Ar.</text>
+<path d="M208.5 111.5 L270.3 49.7 A156.0 156.0 0 0 1 310.7 119.6 L226.3 142.2 A68.6 68.6 0 0 0 208.5 111.5Z" fill="#d78c19" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="257.3" y="103.8" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Arancio</text>
+<path d="M226.3 142.2 L310.7 119.6 A156.0 156.0 0 0 1 310.7 200.4 L226.3 177.8 A68.6 68.6 0 0 0 226.3 142.2Z" fill="#d2bc18" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="272.3" y="160.0" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">G-Ar.</text>
+<path d="M226.3 177.8 L310.7 200.4 A156.0 156.0 0 0 1 270.3 270.3 L208.5 208.5 A68.6 68.6 0 0 0 226.3 177.8Z" fill="#c2c818" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="257.3" y="216.2" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Giallo</text>
+<path d="M208.5 208.5 L270.3 270.3 A156.0 156.0 0 0 1 200.4 310.7 L177.8 226.3 A68.6 68.6 0 0 0 208.5 208.5Z" fill="#6eb82d" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="216.2" y="257.3" fill="#28180e" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">G-V.</text>
+<path d="M177.8 226.3 L200.4 310.7 A156.0 156.0 0 0 1 119.6 310.7 L142.2 226.3 A68.6 68.6 0 0 0 177.8 226.3Z" fill="#2da04b" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="160.0" y="272.3" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Verde</text>
+<path d="M142.2 226.3 L119.6 310.7 A156.0 156.0 0 0 1 49.7 270.3 L111.5 208.5 A68.6 68.6 0 0 0 142.2 226.3Z" fill="#26917d" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="103.8" y="257.3" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">B-V.</text>
+<path d="M111.5 208.5 L49.7 270.3 A156.0 156.0 0 0 1 9.3 200.4 L93.7 177.8 A68.6 68.6 0 0 0 111.5 208.5Z" fill="#1e64af" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="62.7" y="216.2" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Blu</text>
+<path d="M93.7 177.8 L9.3 200.4 A156.0 156.0 0 0 1 9.3 119.6 L93.7 142.2 A68.6 68.6 0 0 0 93.7 177.8Z" fill="#373797" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="47.7" y="160.0" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">B-Vi.</text>
+<path d="M93.7 142.2 L9.3 119.6 A156.0 156.0 0 0 1 49.7 49.7 L111.5 111.5 A68.6 68.6 0 0 0 93.7 142.2Z" fill="#782896" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="62.7" y="103.8" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">Viola</text>
+<path d="M111.5 111.5 L49.7 49.7 A156.0 156.0 0 0 1 119.6 9.3 L142.2 93.7 A68.6 68.6 0 0 0 111.5 111.5Z" fill="#af2364" stroke="#f7f1e5" stroke-width="1.5"/>
+<text x="103.8" y="62.7" fill="#fff9f0" font-size="13" font-weight="bold" font-family="Lora,Georgia,serif" text-anchor="middle" dominant-baseline="middle">R-Vi.</text>
+<circle cx="160" cy="160" r="68.6" fill="#f7f1e5" stroke="rgba(200,170,115,0.4)" stroke-width="1"/>
+<line x1="160.0" y1="101.7" x2="160.0" y2="218.3" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="189.2" y1="109.5" x2="130.8" y2="210.5" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="210.5" y1="130.8" x2="109.5" y2="189.2" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="218.3" y1="160.0" x2="101.7" y2="160.0" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="210.5" y1="189.2" x2="109.5" y2="130.8" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<line x1="189.2" y1="210.5" x2="130.8" y2="109.5" stroke="rgba(168,138,68,0.4)" stroke-width="1.2"/>
+<circle cx="160" cy="160" r="5" fill="rgba(168,138,68,0.65)"/>
+</svg>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="card-title" style="font-size:12px">Complementari nella tavolozza Casorati</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+        <div class="comp-row">
+          <div class="comp-chip" style="background:#e8b820"></div><div class="comp-name" style="font-size:10px">Cd Giallo Medio</div>
+          <div class="comp-arrow">↔</div><div class="comp-neutral" style="background:#787048"></div><div class="comp-arrow">↔</div>
+          <div class="comp-chip" style="background:#1a2870"></div><div class="comp-name" style="font-size:10px">Oltremare Scuro</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-chip" style="background:#e04030"></div><div class="comp-name" style="font-size:10px">Rosso Cd Chiaro</div>
+          <div class="comp-arrow">↔</div><div class="comp-neutral" style="background:#686858"></div><div class="comp-arrow">↔</div>
+          <div class="comp-chip" style="background:#4888c8"></div><div class="comp-name" style="font-size:10px">Cobalto Chiaro</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-chip" style="background:#8c1c30"></div><div class="comp-name" style="font-size:10px">Lacca Alizarina</div>
+          <div class="comp-arrow">↔</div><div class="comp-neutral" style="background:#507850"></div><div class="comp-arrow">↔</div>
+          <div class="comp-chip" style="background:#003858"></div><div class="comp-name" style="font-size:10px">Blu di Prussia</div>
+        </div>
+        <div class="comp-row" style="border-bottom:none">
+          <div class="comp-chip" style="background:#c89840"></div><div class="comp-name" style="font-size:10px">Ocra Gialla</div>
+          <div class="comp-arrow">↔</div><div class="comp-neutral" style="background:#686880"></div><div class="comp-arrow">↔</div>
+          <div class="comp-chip" style="background:#1a2870"></div><div class="comp-name" style="font-size:10px">Oltremare Scuro</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GIALLI -->
+    <div class="ccm-group">
+      <div class="ccm-group-header"><div class="ccm-group-dot" style="background:#e8c418"></div><span>I Gialli</span></div>
+      <div class="ccm-swatches">
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#eed282"></div>
+          <div class="ccm-name">Giallo di Napoli</div>
+          <div class="ccm-info">PY 41 · opaco · caldo</div>
+          <div class="ccm-use">Base incarnati · luci delicate · non ingiallisce</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#f0dc40"></div>
+          <div class="ccm-name">Cadmio Limone</div>
+          <div class="ccm-info">PY 35 · opaco · freddo</div>
+          <div class="ccm-use">Luci vivide · verde-giallo · verdi brillanti con blu</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#e8b820"></div>
+          <div class="ccm-name">Cadmio Medio</div>
+          <div class="ccm-info">PY 35 · opaco · caldo-neutro</div>
+          <div class="ccm-use">Giallo universale · arancio con Cd Red</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#d08810"></div>
+          <div class="ccm-name">Cadmio Scuro</div>
+          <div class="ccm-info">PY 35/PO 20 · opaco · arancio-giallo</div>
+          <div class="ccm-use">Mezzitoni caldi · transizione verso arancio</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROSSI -->
+    <div class="ccm-group">
+      <div class="ccm-group-header"><div class="ccm-group-dot" style="background:#c03020"></div><span>I Rossi</span></div>
+      <div class="ccm-swatches">
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#8c1c30"></div>
+          <div class="ccm-name">Lacca di Alizarina</div>
+          <div class="ccm-info">PR 83 · trasparente · freddo</div>
+          <div class="ccm-use">Velature · ombre pelle · viola con Ultramarine</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#e04030"></div>
+          <div class="ccm-name">Rosso Cd Chiaro</div>
+          <div class="ccm-info">PR 108 · opaco · arancio-rosso</div>
+          <div class="ccm-use">Labbra · guance · arancio con giallo cadmio</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#a82018"></div>
+          <div class="ccm-name">Rosso Cd Scuro</div>
+          <div class="ccm-info">PR 108 · opaco · rosso-viola</div>
+          <div class="ccm-use">Ombre rosse profonde · viola scuro con Alizarin</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#cc3828"></div>
+          <div class="ccm-name">Vermiglione Chiaro</div>
+          <div class="ccm-info">PR 106 · opaco · storico</div>
+          <div class="ccm-use">Il rosso più puro · non mescolare con cadmi o Prussian</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLU -->
+    <div class="ccm-group">
+      <div class="ccm-group-header"><div class="ccm-group-dot" style="background:#2050a0"></div><span>I Blu</span></div>
+      <div class="ccm-swatches">
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#4888c8"></div>
+          <div class="ccm-name">Cobalto Chiaro</div>
+          <div class="ccm-info">PB 28 · semi-trasparente · neutro</div>
+          <div class="ccm-use">Cielo · acque · né caldo né freddo · versatile</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#1a2870"></div>
+          <div class="ccm-name">Oltremare Scuro</div>
+          <div class="ccm-info">PB 29 · semi-trasparente · rosso-blu</div>
+          <div class="ccm-use">Ombre calde · viola con Alizarin · grigio caldo con Siena</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#003858"></div>
+          <div class="ccm-name">Blu di Prussia</div>
+          <div class="ccm-info">PB 27 · trasparente · verde-blu</div>
+          <div class="ccm-use">Verde con giallo · acque profonde · usare in tracce</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERRE -->
+    <div class="ccm-group">
+      <div class="ccm-group-header"><div class="ccm-group-dot" style="background:#a06028"></div><span>Le Terre</span></div>
+      <div class="ccm-swatches">
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#c89840"></div>
+          <div class="ccm-name">Ocra Gialla</div>
+          <div class="ccm-info">PY 43 · opaco · giallo-arancio caldo</div>
+          <div class="ccm-use">Tono base universale · fondamenta di tutti gli incarnati</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#9c4820"></div>
+          <div class="ccm-name">Siena Bruciata</div>
+          <div class="ccm-info">PBr 7 · semi-trasparente · arancio-rosso</div>
+          <div class="ccm-use">Imprimitura · ombre calde · essiccazione rapida</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#6a5030"></div>
+          <div class="ccm-name">Ombra Naturale</div>
+          <div class="ccm-info">PBr 7/PY 43 · semi-trasparente · grigio-marrone</div>
+          <div class="ccm-use">Grigio neutro verde · ombre paesaggio · seccante rapido</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#4a2c10"></div>
+          <div class="ccm-name">Ombra Bruciata</div>
+          <div class="ccm-info">PBr 7 · trasparente · rosso-marrone caldo</div>
+          <div class="ccm-use">Il "nero caldo" · ombre profonde · primo imprimatur</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEUTRI -->
+    <div class="ccm-group">
+      <div class="ccm-group-header"><div class="ccm-group-dot" style="background:#888880"></div><span>I Neutri</span></div>
+      <div class="ccm-swatches">
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#f0ece2;box-shadow:0 2px 8px rgba(0,0,0,.12),inset 0 0 0 1px rgba(0,0,0,.08)"></div>
+          <div class="ccm-name">Bianco Titanio</div>
+          <div class="ccm-info">PW 6 · opaco · neutro · coprente</div>
+          <div class="ccm-use">Tutti gli strati · non ingiallisce · preferire al Pb</div>
+        </div>
+        <div class="ccm-item">
+          <div class="ccm-sw" style="background:#1e1a14"></div>
+          <div class="ccm-name">Nero d'Avorio</div>
+          <div class="ccm-info">PBk 9 · semi-trasparente · caldo · lento</div>
+          <div class="ccm-use">Solo misto · mai puro · con Ocra fa verde-scuro</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ricette -->
+    <div class="sec-head" style="margin-top:22px"><h2>Ricette fondamentali</h2><div class="sub">Miscele con i 18 colori Casorati</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="card">
+      <div class="card-title">Incarnato chiaro — base Casorati</div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">70%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#eed282"></div><div class="mix-ratio">20%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#e04030"></div><div class="mix-ratio">10%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f5d8b0"></div></div>
+        <div class="mix-label">Luce base</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89840"></div><div class="mix-ratio">55%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#9c4820"></div><div class="mix-ratio">30%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div><div class="mix-ratio">15%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#b07030"></div></div>
+        <div class="mix-label">Mezzitono</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#4a2c10"></div><div class="mix-ratio">60%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#1a2870"></div><div class="mix-ratio">40%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#301828"></div></div>
+        <div class="mix-label">Ombra profonda</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Grigi pittorici — terre + blu</div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#1a2870"></div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#9c4820"></div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#5a4050"></div></div>
+        <div class="mix-label">Grigio caldo</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#4888c8"></div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#6a5030"></div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#506070"></div></div>
+        <div class="mix-label">Grigio freddo</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#003858"></div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#302840"></div></div>
+        <div class="mix-label">Nero cromatico</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Verdi paesaggio — gialli + blu</div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0dc40"></div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#003858"></div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#406030"></div></div>
+        <div class="mix-label">Verde brillante</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89840"></div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#4888c8"></div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#788840"></div></div>
+        <div class="mix-label">Verde oliva</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#d08810"></div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#4a2c10"></div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#885018"></div></div>
+        <div class="mix-label">Ocra bruciata</div>
+      </div>
+    </div>
+
+    <!-- Compatibility notes -->
+    <div class="sec-head" style="margin-top:22px"><h2>Note di compatibilità</h2><div class="sub">Avvertenze specifiche per questa tavolozza</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="card">
+      <div class="prop-row"><div class="prop-key" style="min-width:130px">⚠ Vermiglione</div><div class="prop-val">Non mescolare con cadmi o Blu di Prussia — reazione chimica. Solo con bianchi e ocre.</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:130px">⚠ Nero d'Avorio</div><div class="prop-val">Essiccazione lentissima. Non usare nei primi strati. Con Ocra gialla produce verde.</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:130px">⚠ Blu di Prussia</div><div class="prop-val">Potere colorante altissimo — usare in tracce minime. Domina qualsiasi miscela.</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:130px">✓ T. Ombra Bru.</div><div class="prop-val">Seccante più rapido della tavolozza — ideale nei primi strati e nell'imprimatur.</div></div>
+      <div class="prop-row" style="border-bottom:none"><div class="prop-key" style="min-width:130px">✓ Cd + Cd</div><div class="prop-val">I cadmi (gialli e rossi) si mescolano liberamente tra loro con risultati brillanti e stabili.</div></div>
+    </div>
+
+  </div><!-- /pal-casorati -->
+</div>
+<div class="section" id="s-nudo">
+<div class="page-label">
+    <div class="page-num">VI</div>
+    <div class="page-info">
+      <h2>Figura &amp; Incarnato</h2>
+      <p>Tecniche per dipingere la figura umana ad olio</p>
+    </div>
+  </div>
+
+  <!-- Sub-nav -->
+  <input type="radio" class="snav-radio" id="nudo-r-incarnato" name="nudo-tabs" checked>
+  <input type="radio" class="snav-radio" id="nudo-r-zones"     name="nudo-tabs">
+  <input type="radio" class="snav-radio" id="nudo-r-tech"      name="nudo-tabs">
+  <div class="subnav-wrap">
+    <div class="subnav">
+      <label class="snav" for="nudo-r-incarnato" onclick="document.getElementById('nudo-r-incarnato').checked=true">Incarnato</label>
+      <label class="snav" for="nudo-r-zones" onclick="document.getElementById('nudo-r-zones').checked=true">Zone</label>
+      <label class="snav" for="nudo-r-tech" onclick="document.getElementById('nudo-r-tech').checked=true">Tecnica</label>
+    </div>
+  </div>
+
+  <!-- ══ A: INCARNATO ══ -->
+  <div id="nudo-incarnato">
+
+    <div class="sec-head"><h2>Paletta per la figura</h2><div class="sub">I pigmenti fondamentali per dipingere la pelle</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      <strong>Regola d'oro:</strong> La pelle non è mai un solo colore. Contiene rossi, gialli, ocre, viola, verdi nei riflessi. Il segreto è la <em>variazione cromatica</em> mantenendo i valori corretti.
+    </div>
+
+    <!-- Core skin palette -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">Palette essenziale per l'incarnato</div>
+      <div class="card-sub">Questi 6 pigmenti coprono il 90% delle carnagioni</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
+        <div class="pal-item"><div class="pal-swatch" style="background:#f0ece2;box-shadow:0 3px 8px rgba(0,0,0,.15),inset 0 0 0 1px rgba(0,0,0,.08)"></div><div class="pal-name">Titanium White</div><div class="pal-pig">PW 6</div><div class="pal-use">Luci e chiarori</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#eed282"></div><div class="pal-name">Naples Yellow</div><div class="pal-pig">PY 41</div><div class="pal-use">Tono base caldo</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#cca248"></div><div class="pal-name">Yellow Ochre</div><div class="pal-pig">PY 43</div><div class="pal-use">Mezzitoni e base</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#a04e26"></div><div class="pal-name">Burnt Sienna</div><div class="pal-pig">PBr 7</div><div class="pal-use">Ombre calde, guance</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#8c1c30"></div><div class="pal-name">Alizarin Crimson</div><div class="pal-pig">PR 83</div><div class="pal-use">Rossori, velature</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#203080"></div><div class="pal-name">Ultramarine</div><div class="pal-pig">PB 29</div><div class="pal-use">Ombre fredde</div></div>
+      </div>
+      <div class="infobox" style="margin-top:12px;font-size:11px">
+        Aggiungi <strong>Burnt Umber</strong> per carnagioni medie/scure e <strong>Cadmium Red</strong> per rossori vivaci come labbra e guance.
+      </div>
+    </div>
+
+    <!-- 5 carnagioni -->
+    <div class="sec-head" style="margin-top:22px"><h2>5 Tipi di carnagione</h2><div class="sub">Scale luce → mezzitono → ombra per ogni tipo</div></div>
+    <div class="sec-divider"></div>
+
+    <!-- Carnagione 1: Nordica/Pallida -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><div class="card-title">① Nordica / Pallida</div><div class="card-sub">Porcelain · Very fair · Rosea</div></div>
+        <div style="display:flex;gap:4px">
+          <div style="width:18px;height:18px;border-radius:50%;background:#f5ddc8;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#e8b898;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#c48060;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+        </div>
+      </div>
+      <div class="value-strip" style="height:42px;gap:3px">
+        <div class="seg" style="background:#f5e8d8"></div>
+        <div class="seg" style="background:#f0d8c0"></div>
+        <div class="seg" style="background:#e8c4a0"></div>
+        <div class="seg" style="background:#d8a880"></div>
+        <div class="seg" style="background:#c08060"></div>
+        <div class="seg" style="background:#a06040"></div>
+        <div class="seg" style="background:#784030"></div>
+        <div class="seg" style="background:#502818"></div>
+      </div>
+      <div class="gradient-label"><span>Luce alta</span><span>Ombra profonda</span></div>
+      <div style="margin-top:10px">
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#eed282"></div></div><div class="mix-op" style="font-size:11px;color:var(--ink-ff)">tr</div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f5e0c0"></div></div><div class="mix-label">Luce base</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#eed282"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-op" style="font-size:11px;color:var(--ink-ff)">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#dba878"></div></div><div class="mix-label">Mezzitono</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div><div class="mix-op" style="font-size:9px;color:var(--ink-ff)">poco</div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#7a4030"></div></div><div class="mix-label">Ombra fredda</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div></div><div class="mix-op" style="font-size:9px;color:var(--ink-ff)">tr</div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ccc0"></div></div><div class="mix-label">Guance / rossore</div></div>
+      </div>
+    </div>
+
+    <!-- Carnagione 2: Mediterranea -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><div class="card-title">② Mediterranea / Olivastra</div><div class="card-sub">Olive · Warm tan · Italian/Spanish</div></div>
+        <div style="display:flex;gap:4px">
+          <div style="width:18px;height:18px;border-radius:50%;background:#d9a06a;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#c07848;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#8c4820;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+        </div>
+      </div>
+      <div class="value-strip" style="height:42px;gap:3px">
+        <div class="seg" style="background:#e8c888"></div>
+        <div class="seg" style="background:#d8a860"></div>
+        <div class="seg" style="background:#c88840"></div>
+        <div class="seg" style="background:#b07030"></div>
+        <div class="seg" style="background:#905020"></div>
+        <div class="seg" style="background:#703010"></div>
+        <div class="seg" style="background:#501808"></div>
+        <div class="seg" style="background:#300808"></div>
+      </div>
+      <div class="gradient-label"><span>Luce alta</span><span>Ombra profonda</span></div>
+      <div style="margin-top:10px">
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#eed282"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#e0c070"></div></div><div class="mix-label">Luce base</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#b87838"></div></div><div class="mix-label">Mezzitono caldo</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6a3010"></div></div><div class="mix-label">Ombra profonda</div></div>
+      </div>
+    </div>
+
+    <!-- Carnagione 3: Media/Bronzata -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><div class="card-title">③ Media / Bronzata</div><div class="card-sub">Medium brown · Warm honey</div></div>
+        <div style="display:flex;gap:4px">
+          <div style="width:18px;height:18px;border-radius:50%;background:#c07840;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#905020;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#602808;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+        </div>
+      </div>
+      <div class="value-strip" style="height:42px;gap:3px">
+        <div class="seg" style="background:#c8885a"></div>
+        <div class="seg" style="background:#b07040"></div>
+        <div class="seg" style="background:#985828"></div>
+        <div class="seg" style="background:#804018"></div>
+        <div class="seg" style="background:#642808"></div>
+        <div class="seg" style="background:#4a1804"></div>
+        <div class="seg" style="background:#320c02"></div>
+        <div class="seg" style="background:#1e0802"></div>
+      </div>
+      <div class="gradient-label"><span>Luce alta</span><span>Ombra profonda</span></div>
+      <div style="margin-top:10px">
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#d03c28"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#c88050"></div></div><div class="mix-label">Luce base</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#b47030"></div></div><div class="mix-label">Tono base</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#4a2010"></div></div><div class="mix-label">Ombra calda</div></div>
+      </div>
+    </div>
+
+    <!-- Carnagione 4: Scura / Ebano -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><div class="card-title">④ Scura / Ebano</div><div class="card-sub">Deep brown · Ebony · Rich warm darks</div></div>
+        <div style="display:flex;gap:4px">
+          <div style="width:18px;height:18px;border-radius:50%;background:#7a4020;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#502010;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#280c04;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+        </div>
+      </div>
+      <div class="value-strip" style="height:42px;gap:3px">
+        <div class="seg" style="background:#a06030"></div>
+        <div class="seg" style="background:#884820"></div>
+        <div class="seg" style="background:#703010"></div>
+        <div class="seg" style="background:#581c08"></div>
+        <div class="seg" style="background:#400c04"></div>
+        <div class="seg" style="background:#2c0802"></div>
+        <div class="seg" style="background:#1c0402"></div>
+        <div class="seg" style="background:#100202"></div>
+      </div>
+      <div class="gradient-label"><span>Luce alta</span><span>Ombra profonda</span></div>
+      <div style="margin-top:10px">
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#d03c28"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#b05828"></div></div><div class="mix-label">Luce — rosso caldo</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#883020"></div></div><div class="mix-label">Tono base</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#8c1c30"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#301008"></div></div><div class="mix-label">Ombra profonda</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div><div class="mix-op" style="font-size:9px;color:var(--ink-ff)">tr</div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#d0d8e8"></div></div><div class="mix-label">Riflesso freddo alto</div></div>
+      </div>
+    </div>
+
+    <!-- Carnagione 5: Asiatica -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><div class="card-title">⑤ Asiatica / Giallo-Neutra</div><div class="card-sub">East Asian · Warm neutral · Ochre-based</div></div>
+        <div style="display:flex;gap:4px">
+          <div style="width:18px;height:18px;border-radius:50%;background:#e8c090;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#c89858;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:#906830;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+        </div>
+      </div>
+      <div class="value-strip" style="height:42px;gap:3px">
+        <div class="seg" style="background:#f0d8a8"></div>
+        <div class="seg" style="background:#e0c080"></div>
+        <div class="seg" style="background:#c8a058"></div>
+        <div class="seg" style="background:#b08038"></div>
+        <div class="seg" style="background:#906018"></div>
+        <div class="seg" style="background:#704808"></div>
+        <div class="seg" style="background:#503004"></div>
+        <div class="seg" style="background:#301802"></div>
+      </div>
+      <div class="gradient-label"><span>Luce alta</span><span>Ombra profonda</span></div>
+      <div style="margin-top:10px">
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#eed282"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0d898"></div></div><div class="mix-label">Luce giallo-neutra</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div></div><div class="mix-op" style="font-size:9px;color:var(--ink-ff)">poco</div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89050"></div></div><div class="mix-label">Tono base</div></div>
+        <div class="mix-formula"><div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div></div><div class="mix-op">+</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div></div><div class="mix-arrow">→</div><div class="swatch-block"><div class="swatch swatch-sm" style="background:#786020"></div></div><div class="mix-label">Ombra neutra</div></div>
+      </div>
+    </div>
+
+  </div><!-- /nudo-incarnato -->
+
+  <!-- ══ B: ZONE CROMATICHE ══ -->
+  <div id="nudo-zones">
+
+    <div class="sec-head"><h2>Zone cromatiche della figura</h2><div class="sub">Ogni area del corpo ha un carattere cromatico diverso</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      La pelle non è uniforme. Guance, naso, orecchie sono più rosse (più vascolari). Fronte e spalle tendono al giallo-ocra. Le ombre virano al freddo (blu/viola) nella luce diretta e al caldo nei riflessi.
+    </div>
+
+    <!-- Zone table -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">Mappa cromatica per zona</div>
+
+      <div class="zone-row">
+        <div class="zone-label">Fronte / Collo</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#f0d898"></div>
+          <div class="zone-chip" style="background:#e0c070"></div>
+          <div class="zone-chip" style="background:#c89848"></div>
+        </div>
+        <div class="zone-note">Giallo-ocra · meno vascolare · più neutro</div>
+      </div>
+      <div class="zone-row">
+        <div class="zone-label">Guance / Naso</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#e8a880"></div>
+          <div class="zone-chip" style="background:#d07858"></div>
+          <div class="zone-chip" style="background:#b05030"></div>
+        </div>
+        <div class="zone-note">Rosso-arancio · molto vascolare · vivo</div>
+      </div>
+      <div class="zone-row">
+        <div class="zone-label">Labbra</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#d07060"></div>
+          <div class="zone-chip" style="background:#b84840"></div>
+          <div class="zone-chip" style="background:#882028"></div>
+        </div>
+        <div class="zone-note">Rosso-rosa · Alizarin + Cd Red + Bianco</div>
+      </div>
+      <div class="zone-row">
+        <div class="zone-label">Orecchie</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#e09070"></div>
+          <div class="zone-chip" style="background:#c06040"></div>
+          <div class="zone-chip" style="background:#903020"></div>
+        </div>
+        <div class="zone-note">Rosso traslucido · retroilluminazione</div>
+      </div>
+      <div class="zone-row">
+        <div class="zone-label">Palpebre / Occhi</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#c8a8b8"></div>
+          <div class="zone-chip" style="background:#a07888"></div>
+          <div class="zone-chip" style="background:#706080"></div>
+        </div>
+        <div class="zone-note">Viola-grigio · delicato · velatura</div>
+      </div>
+      <div class="zone-row">
+        <div class="zone-label">Spalle / Torso</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#e8c888"></div>
+          <div class="zone-chip" style="background:#c8a058"></div>
+          <div class="zone-chip" style="background:#a07030"></div>
+        </div>
+        <div class="zone-note">Giallo-ocra · neutro · tono principale</div>
+      </div>
+      <div class="zone-row">
+        <div class="zone-label">Ombre nella pelle</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#8068a0"></div>
+          <div class="zone-chip" style="background:#6858a0"></div>
+          <div class="zone-chip" style="background:#4848b0"></div>
+        </div>
+        <div class="zone-note">Viola-freddo in luce diretta · mai nero</div>
+      </div>
+      <div class="zone-row" style="border-bottom:none">
+        <div class="zone-label">Riflessi caldi</div>
+        <div class="zone-chips">
+          <div class="zone-chip" style="background:#d8a068"></div>
+          <div class="zone-chip" style="background:#c08040"></div>
+          <div class="zone-chip" style="background:#a86030"></div>
+        </div>
+        <div class="zone-note">Ocra-arancio · rimbalzo da superficie calda</div>
+      </div>
+    </div>
+
+    <!-- Luce sul corpo -->
+    <div class="sec-head" style="margin-top:22px"><h2>Luce e ombra sulla figura</h2><div class="sub">Come costruire il volume con la luce</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="card">
+      <div class="card-title">I 5 valori fondamentali della forma</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:50px;height:36px;border-radius:5px;background:#f8f0e0;border:1px solid #ddd;flex-shrink:0"></div>
+          <div><div style="font-size:12px;font-weight:600">Luce alta (highlight)</div><div style="font-size:11px;color:var(--ink-f)">Bianco titanio + tocco Naples Yellow. Solo sulla forma più esposta. Pasta densa.</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:50px;height:36px;border-radius:5px;background:#e8c888;flex-shrink:0"></div>
+          <div><div style="font-size:12px;font-weight:600">Luce diretta</div><div style="font-size:11px;color:var(--ink-f)">Tono chiaro base — il colore "principale" della pelle in piena luce.</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:50px;height:36px;border-radius:5px;background:#c08848;flex-shrink:0"></div>
+          <div><div style="font-size:12px;font-weight:600">Mezzitono</div><div style="font-size:11px;color:var(--ink-f)">La zona di transizione — più satura del colore di luce. Non aggiungere né bianco né nero.</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:50px;height:36px;border-radius:5px;background:#784870;flex-shrink:0"></div>
+          <div><div style="font-size:12px;font-weight:600">Ombra</div><div style="font-size:11px;color:var(--ink-f)">Viola-freddo o rosso-scuro. Mai nero puro. Usare velatura trasparente sopra la grisaille.</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:50px;height:36px;border-radius:5px;background:#c07040;flex-shrink:0"></div>
+          <div><div style="font-size:12px;font-weight:600">Riflesso (rimbalzo)</div><div style="font-size:11px;color:var(--ink-f)">Luce che rimbalza dal fondo o da altre superfici. Più scuro della luce diretta, ma caldo.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Temperatura luce/ombra -->
+    <div class="card">
+      <div class="card-title">Luce calda → Ombra fredda (e viceversa)</div>
+      <div class="card-sub">La regola fondamentale del contrasto termico nella figura</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <div style="text-align:center">
+          <div style="background:linear-gradient(135deg,#f8d880,#e8a840);height:60px;border-radius:8px;margin-bottom:6px;box-shadow:0 2px 8px rgba(0,0,0,.15)"></div>
+          <div style="font-size:11px;font-weight:600">Luce Calda</div>
+          <div style="font-size:10px;color:var(--ink-f)">Sole, candela, lampada · Naples Yellow + Ochre</div>
+        </div>
+        <div style="text-align:center">
+          <div style="background:linear-gradient(135deg,#6878c8,#304898);height:60px;border-radius:8px;margin-bottom:6px;box-shadow:0 2px 8px rgba(0,0,0,.15)"></div>
+          <div style="font-size:11px;font-weight:600">Ombra Fredda</div>
+          <div style="font-size:10px;color:var(--ink-f)">Luce diffusa · Ultramarine + Alizarin traccia</div>
+        </div>
+        <div style="text-align:center">
+          <div style="background:linear-gradient(135deg,#a0c8e8,#5898c8);height:60px;border-radius:8px;margin-bottom:6px;box-shadow:0 2px 8px rgba(0,0,0,.15)"></div>
+          <div style="font-size:11px;font-weight:600">Luce Fredda</div>
+          <div style="font-size:10px;color:var(--ink-f)">Cielo, neon, overcast · Cobalt + White</div>
+        </div>
+        <div style="text-align:center">
+          <div style="background:linear-gradient(135deg,#b87040,#884020);height:60px;border-radius:8px;margin-bottom:6px;box-shadow:0 2px 8px rgba(0,0,0,.15)"></div>
+          <div style="font-size:11px;font-weight:600">Ombra Calda</div>
+          <div style="font-size:10px;color:var(--ink-f)">Riflesso pavimento · Siena + Umber</div>
+        </div>
+      </div>
+      <div class="infobox" style="margin-top:12px;font-size:11px">
+        Se la luce è calda, le ombre virano al freddo (viola-blu). Se la luce è fredda (cielo), le ombre virano al caldo (ocra-arancio). Applicare questa regola rende la pelle viva.
+      </div>
+    </div>
+
+  </div><!-- /nudo-zones -->
+
+  <!-- ══ C: TECNICA ══ -->
+  <div id="nudo-tech">
+
+    <div class="sec-head"><h2>Tecniche per la figura</h2><div class="sub">Approcci e metodi dal vivo e dal modello</div></div>
+    <div class="sec-divider"></div>
+
+    <!-- Metodo accademico -->
+    <div class="card">
+      <div class="card-title">Metodo Accademico — 4 fasi</div>
+      <div class="card-sub">Il metodo classico degli antichi maestri</div>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:2px">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <div class="step-title">Imprimitura colorata</div>
+            <div class="step-body">Stendere un fondo di Terra di Siena bruciata diluita o ocra. Lasciare asciugare. Questo fondo "media" tra le luci (che si staccano) e le ombre (che si integrano con il fondo).</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <div class="step-title">Dead colouring / Abbozzo tonale</div>
+            <div class="step-body">Stendere l'incarnato base senza bianco — solo i toni medi e scuri. La luce rimane il fondo. Miscela classica: Ocra + Siena bru. + traccia Alizarin.</div>
+            <div class="value-strip" style="margin-top:8px;height:32px;gap:2px">
+              <div class="seg" style="background:#e0c070"></div>
+              <div class="seg" style="background:#c89848"></div>
+              <div class="seg" style="background:#a87830"></div>
+              <div class="seg" style="background:#885018"></div>
+              <div class="seg" style="background:#6a3008"></div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <div class="step-title">Luci in pasta — corpo</div>
+            <div class="step-body">Applicare le luci con pasta densa: Bianco + Naples Yellow (+ traccia Ochre o Siena per calore). Lavorare le transizioni bagnato su bagnato. Le luci create in pasta sembrano "vive".</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <div class="step-title">Velature finali</div>
+            <div class="step-body">Dopo asciugatura (24-48h): velature trasparenti con Alizarin o Siena bru. sulle guance, sulle giunture, dove il calore è maggiore. Raffredda le ombre con Ultramarine diluito.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consigli pratici figura -->
+    <div class="sec-head" style="margin-top:22px"><h2>Consigli pratici per la figura</h2></div>
+    <div class="sec-divider"></div>
+
+    <div class="tip-card">
+      <div class="tip-num">1</div>
+      <div class="tip-body">
+        <div class="tip-title">Valori prima dei colori</div>
+        <div class="tip-text">Prima di mescolare qualsiasi colore, stabilisci la gerarchia dei valori. Una pelle con valori corretti funziona anche se il colore è leggermente sbagliato. L'inverso no.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">2</div>
+      <div class="tip-body">
+        <div class="tip-title">Mai nero nelle ombre della pelle</div>
+        <div class="tip-text">L'ombra nella pelle contiene sempre colore. Usa Ultramarine + Alizarin per ombre fredde. Burnt Sienna + Umber per ombre calde. Il nero crea pelle morta e artificiale.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">3</div>
+      <div class="tip-body">
+        <div class="tip-title">Mezzitono = zona più satura</div>
+        <div class="tip-text">Il mezzitono (bordo luce/ombra) è dove il colore è più intenso e vivo. Non aggiungere né bianco né nero in quella zona — solo il pigmento puro o quasi.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">4</div>
+      <div class="tip-body">
+        <div class="tip-title">Il riflesso è sempre più scuro della luce diretta</div>
+        <div class="tip-text">Il riflesso di rimbalzo nel lato in ombra è sempre più scuro della luce diretta. Un errore comune è renderlo troppo chiaro, il che appiattisce la forma.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">5</div>
+      <div class="tip-body">
+        <div class="tip-title">Bordo duro vs morbido</div>
+        <div class="tip-text">I bordi morbidi leggono come forme che si allontanano dalla luce. I bordi duri sono in piena luce o in primo piano. Varia i bordi per creare profondità e atmosfera nella figura.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">6</div>
+      <div class="tip-body">
+        <div class="tip-title">La pelle cambia colore con la distanza</div>
+        <div class="tip-text">Le zone lontane dall'osservatore (come il fondo della figura) perdono contrasto e saturazione. Raffredda leggermente i toni delle zone più distanti per creare profondità spaziale.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">7</div>
+      <div class="tip-body">
+        <div class="tip-title">Imprimitura colorata — scegliere il giusto fondo</div>
+        <div class="tip-text">Fondo ocra/Siena: ideale per carnagioni calde. Fondo grigio neutro: ideale per figure con illuminazione fredda. Fondo bianco: solo per massima luminosità, richiede più controllo.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">8</div>
+      <div class="tip-body">
+        <div class="tip-title">Miscela "killer" per la pelle universale</div>
+        <div class="tip-text">Bianco titanio + Giallo Napoli + Ocra (80/10/10) = tono base quasi universale per carnagioni medie in piena luce. Modifica il rapporto per adattarlo a ogni carnagione specifica.</div>
+        <div class="mix-formula" style="margin-top:8px">
+          <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">80%</div></div>
+          <div class="mix-op">+</div>
+          <div class="swatch-block"><div class="swatch swatch-sm" style="background:#eed282"></div><div class="mix-ratio">10%</div></div>
+          <div class="mix-op">+</div>
+          <div class="swatch-block"><div class="swatch swatch-sm" style="background:#cca248"></div><div class="mix-ratio">10%</div></div>
+          <div class="mix-arrow">→</div>
+          <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0d8a0"></div></div>
+          <div class="mix-label">Base universale</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grigi per la figura -->
+    <div class="sec-head" style="margin-top:22px"><h2>Grigi cromatici per la figura</h2><div class="sub">Per ombre e transizioni della pelle</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="card">
+      <div class="grey-row">
+        <div class="grey-chips"><div class="swatch swatch-sq" style="background:#8c1c30"></div><span style="font-size:13px;color:var(--ink-ff)">+</span><div class="swatch swatch-sq" style="background:#203080"></div></div>
+        <div class="grey-recipe">Alizarin + Ultramarine<br><em>Ombra fredda pelle chiara</em></div>
+        <div class="grey-result"><div class="chip" style="background:#582858"></div><div class="name">Viola ombra</div></div>
+      </div>
+      <div class="grey-row">
+        <div class="grey-chips"><div class="swatch swatch-sq" style="background:#a04e26"></div><span style="font-size:13px;color:var(--ink-ff)">+</span><div class="swatch swatch-sq" style="background:#6c3e1e"></div></div>
+        <div class="grey-recipe">Burnt Sienna + Umber<br><em>Ombra calda universale</em></div>
+        <div class="grey-result"><div class="chip" style="background:#7a3818"></div><div class="name">Bruno caldo</div></div>
+      </div>
+      <div class="grey-row">
+        <div class="grey-chips"><div class="swatch swatch-sq" style="background:#6c3e1e"></div><span style="font-size:13px;color:var(--ink-ff)">+</span><div class="swatch swatch-sq" style="background:#8c1c30"></div></div>
+        <div class="grey-recipe">Burnt Umber + Alizarin<br><em>Ombre profonde scure calde</em></div>
+        <div class="grey-result"><div class="chip" style="background:#582010"></div><div class="name">Bruno-rosso</div></div>
+      </div>
+      <div class="grey-row" style="border-bottom:none">
+        <div class="grey-chips"><div class="swatch swatch-sq" style="background:#f0ece2;border:1px solid #ccc"></div><span style="font-size:13px;color:var(--ink-ff)">+</span><div class="swatch swatch-sq" style="background:#203080"></div></div>
+        <div class="grey-recipe">Bianco + Ultramarine<br><em>Riflesso freddo su pelle chiara</em></div>
+        <div class="grey-result"><div class="chip" style="background:#c0c8e0"></div><div class="name">Grigio-lavanda</div></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin:20px 0 8px;font-size:10px;font-style:italic;color:var(--ink-ff);line-height:1.8">
+      Dipingere la figura è dipingere la luce sulla forma.<br>
+      La pelle è solo il mezzo — la luce è il soggetto.<br>
+      © Pittura ad Olio Easy Recap
+    </div>
+
+    <!-- ── LUCIAN FREUD ── -->
+    <div class="sec-head" style="margin-top:28px">
+      <h2>Tecnica di Lucian Freud</h2>
+      <div class="sub">La figura come materia — peso, carne, presenza</div>
+    </div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      <strong>Filosofia:</strong> Per Freud la pelle non è superficie — è <em>materia</em>. La pittura deve avere peso fisico. Ogni pennellata descrive il volume della carne, non il suo colore. Il risultato è una presenza quasi scultorea.
+    </div>
+
+    <!-- Palette Freud -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">Palette di Freud per la figura</div>
+      <div class="card-sub">Terrosa, grassa, limitata — mai più di 6-7 colori</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#f0ece2;box-shadow:0 3px 8px rgba(0,0,0,.15),inset 0 0 0 1px rgba(0,0,0,.08)"></div>
+          <div class="pal-name">Flake White</div>
+          <div class="pal-pig">PW 1</div>
+          <div class="pal-use">Luci dense, corpo</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#c89840"></div>
+          <div class="pal-name">Yellow Ochre</div>
+          <div class="pal-pig">PY 43</div>
+          <div class="pal-use">Base carnosa universale</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#a04e26"></div>
+          <div class="pal-name">Burnt Sienna</div>
+          <div class="pal-pig">PBr 7</div>
+          <div class="pal-use">Calore e vascolarità</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#6c3e1e"></div>
+          <div class="pal-name">Burnt Umber</div>
+          <div class="pal-pig">PBr 7</div>
+          <div class="pal-use">Ombre profonde e fondi</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#203080"></div>
+          <div class="pal-name">Ultramarine</div>
+          <div class="pal-pig">PB 29</div>
+          <div class="pal-use">Raffreddare le ombre</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#1e1a14"></div>
+          <div class="pal-name">Ivory Black</div>
+          <div class="pal-pig">PBk 9</div>
+          <div class="pal-use">Solo in mix — mai puro</div>
+        </div>
+      </div>
+      <div class="infobox" style="margin-top:10px;font-size:11px">
+        Freud usava spesso il <strong>Cremnitz White</strong> (Bianco di Piombo) per la densità pastosa incomparabile. In mancanza, il Flake White è l'alternativa. Evitare il Titanium White — troppo freddo e plastico per la carne.
+      </div>
+    </div>
+
+    <!-- Metodo Freud step by step -->
+    <div class="sec-head" style="margin-top:22px"><h2>Metodo — 5 fasi</h2><div class="sub">Costruire la carne strato dopo strato</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="card">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-title">Fondo scuro e disegno diretto</div>
+          <div class="step-body">Tela grezza o imprimitura grigio-scura. Disegnare direttamente col pennello in Terra d'ombra bruciata diluita — niente matita. Il disegno deve essere sicuro e veloce. Freud ridisegnava mentre dipingeva.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-title">Impasto denso sulle luci</div>
+          <div class="step-body">Costruire le luci con pasta molto densa — Cremnitz White + Ocra + Siena. Pennellate che <em>descrivono la forma</em>: seguono i piani della carne come se si stesse modellando argilla. Ogni pennellata è una decisione anatomica.</div>
+          <div class="value-strip" style="margin-top:8px;height:28px;gap:2px">
+            <div class="seg" style="background:#f5e8d0"></div>
+            <div class="seg" style="background:#e8c888"></div>
+            <div class="seg" style="background:#d0a060"></div>
+            <div class="seg" style="background:#b07838"></div>
+            <div class="seg" style="background:#885018"></div>
+            <div class="seg" style="background:#602808"></div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-title">Ombre trasparenti e velate</div>
+          <div class="step-body">Le ombre rimangono magre e trasparenti — Burnt Umber + Ultramarine diluiti. Non toccare le luci dense con le ombre. Il contrasto pasta densa / velatura trasparente crea il senso di volume fisico.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-title">Sedute lunghissime dal vivo</div>
+          <div class="step-body">Freud lavorava solo dal vivo — mai da fotografie. Sedute di 6-8 ore, spesso di notte. Il modello è fisicamente presente: si vede nella stanchezza delle pose, nella pesantezza della carne. Lavorare bagnato su bagnato finché possibile.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <div class="step-title">Rifinitura dei bordi e dei dettagli</div>
+          <div class="step-body">Bordi duri dove la forma è vicina alla luce. Bordi morbidi dove si perde nell'ombra. Dettagli finali: capillari nelle guance, unghie, capelli trattati come massa di peso — non come singoli fili.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ricette miscele Freud -->
+    <div class="sec-head" style="margin-top:22px"><h2>Miscele chiave</h2><div class="sub">Le miscele ricorrenti nel suo metodo</div></div>
+    <div class="sec-divider"></div>
+
+    <div class="card">
+      <div class="card-title">Impasto luce — corpo denso</div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">70%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89840"></div><div class="mix-ratio">20%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">10%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0d8a0"></div></div>
+        <div class="mix-label">Luce calda densa</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89840"></div><div class="mix-ratio">50%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">35%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">15%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c07838"></div></div>
+        <div class="mix-label">Mezzitono carnoso</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#6c3e1e"></div><div class="mix-ratio">60%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">40%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#3a2030"></div></div>
+        <div class="mix-label">Ombra fredda profonda</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#a04e26"></div><div class="mix-ratio">65%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#203080"></div><div class="mix-ratio">35%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#703040"></div></div>
+        <div class="mix-label">Ombra calda — guance</div>
+      </div>
+    </div>
+
+    <!-- Consigli filosofici -->
+    <div class="sec-head" style="margin-top:22px"><h2>I principi di Freud</h2></div>
+    <div class="sec-divider"></div>
+
+    <div class="tip-card">
+      <div class="tip-num">1</div>
+      <div class="tip-body">
+        <div class="tip-title">La pittura deve sembrare carne, non colore</div>
+        <div class="tip-text">L'obiettivo non è dipingere qualcosa che <em>assomiglia</em> alla pelle — è creare pittura che <em>è</em> carne. La materia del colore stesso deve comunicare peso e presenza fisica.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">2</div>
+      <div class="tip-body">
+        <div class="tip-title">Pennellate che costruiscono piani</div>
+        <div class="tip-text">Ogni pennellata segue la direzione del piano anatomico che descrive. Non pennellate decorative — pennellate sculturali. Il pennello deve "sentire" la forma sotto.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">3</div>
+      <div class="tip-body">
+        <div class="tip-title">Il fondo lavora per te</div>
+        <div class="tip-text">Un fondo scuro lascia che le ombre si scrivano da sole — basta non coprirle. Le luci si costruiscono in pasta densa sopra. Non cercare di dipingere tutto: il fondo fa metà del lavoro.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">4</div>
+      <div class="tip-body">
+        <div class="tip-title">La fatica è visibile — è un pregio</div>
+        <div class="tip-text">Nei dipinti di Freud si vede il lavoro: strati sovrapposti, ridipinture, pentimenti. Questa stratificazione crea profondità ottica che non si ottiene in una sola seduta. Torna sullo stesso punto, rielabora.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">5</div>
+      <div class="tip-body">
+        <div class="tip-title">Mai dal vivo, mai reale</div>
+        <div class="tip-text">Freud rifiutava le fotografie come riferimento perché congelano un momento. La figura viva respira, si stanca, cambia. Quella mutevolezza si deposita nel dipinto come qualcosa di irriproducibile.</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin:20px 0 8px;font-size:10px;font-style:italic;color:var(--ink-ff);line-height:1.8">
+      <em>"The longer you look at an object, the more abstract it becomes,<br>and, ironically, the more real."</em><br>
+      — Lucian Freud
+    </div>
+
+    <!-- ══ PALETTE ZORN ══ -->
+    <div class="sec-head" style="margin-top:28px">
+      <h2>Palette Zorn</h2>
+      <div class="sub">4 soli pigmenti — la magia dei limiti</div>
+    </div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      Anders Zorn dipingeva ritratti e nudi con soli 4 colori. Il risultato sembrava impossibilmente ricco. Il segreto: capire che quasi tutti i colori che vediamo nella pelle e nella luce calda si ottengono da queste 4 terre.
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">I 4 colori di Zorn</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px">
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#f0ece2;box-shadow:0 3px 8px rgba(0,0,0,.15),inset 0 0 0 1px rgba(0,0,0,.08)"></div>
+          <div class="pal-name">Titanium White</div>
+          <div class="pal-pig">PW 6</div>
+          <div class="pal-use">Luci e schiariture</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#d03c28"></div>
+          <div class="pal-name">Cadmium Red</div>
+          <div class="pal-pig">PR 108</div>
+          <div class="pal-use">Calore, guance, labbra</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#c89840"></div>
+          <div class="pal-name">Yellow Ochre</div>
+          <div class="pal-pig">PY 43</div>
+          <div class="pal-use">Luci calde, tono base</div>
+        </div>
+        <div class="pal-item">
+          <div class="pal-swatch" style="background:#1e1a14"></div>
+          <div class="pal-name">Ivory Black</div>
+          <div class="pal-pig">PBk 9</div>
+          <div class="pal-use">Ombre, freddo, neutri</div>
+        </div>
+      </div>
+      <div class="infobox" style="margin-top:10px;font-size:11px">
+        <strong>Attenzione:</strong> Ivory Black con Bianco dà un azzurro-grigio freddo — questo è il "blu" di Zorn per i cieli e le ombre fredde. Non serve il blu vero.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Miscele fondamentali Zorn</div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">75%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89840"></div><div class="mix-ratio">20%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#d03c28"></div><div class="mix-ratio">5%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f2ddb0"></div></div>
+        <div class="mix-label">Luce alta carnosa</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89840"></div><div class="mix-ratio">50%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#d03c28"></div><div class="mix-ratio">30%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#1e1a14"></div><div class="mix-ratio">20%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#a05828"></div></div>
+        <div class="mix-label">Mezzitono caldo</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#1e1a14"></div><div class="mix-ratio">60%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#d03c28"></div><div class="mix-ratio">25%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c89840"></div><div class="mix-ratio">15%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#3a2010"></div></div>
+        <div class="mix-label">Ombra calda profonda</div>
+      </div>
+      <div class="mix-formula">
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#f0ece2;border:1px solid #ccc"></div><div class="mix-ratio">80%</div></div>
+        <div class="mix-op">+</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#1e1a14"></div><div class="mix-ratio">20%</div></div>
+        <div class="mix-arrow">→</div>
+        <div class="swatch-block"><div class="swatch swatch-sm" style="background:#c8c8c0"></div></div>
+        <div class="mix-label">Grigio-azzurro (il "blu" di Zorn)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Consigli per usare la palette Zorn</div>
+      <div class="prop-row"><div class="prop-key" style="min-width:90px">Limiti</div><div class="prop-val">La restrizione forza la coerenza cromatica. Tutto il dipinto respira con la stessa armonia perché deriva dagli stessi 4 colori.</div></div>
+      <div class="prop-row"><div class="prop-key" style="min-width:90px">Quando usarla</div><div class="prop-val">Ritratti, nudi, figure in luce calda (candela, sole, studio). Non ideale per paesaggi con verdi o cieli intensi.</div></div>
+      <div class="prop-row" style="border-bottom:none"><div class="prop-key" style="min-width:90px">Espansione</div><div class="prop-val">Puoi aggiungere un solo colore extra: Burnt Sienna per ombre più calde, o Ultramarine per cieli freddi.</div></div>
+    </div>
+
+    <!-- ══ TECNICA ALLA PRIMA ══ -->
+    <div class="sec-head" style="margin-top:28px">
+      <h2>Tecnica Alla Prima</h2>
+      <div class="sub">Wet-on-wet — dipingere in una sola seduta</div>
+    </div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      Alla prima (o <em>wet-on-wet</em>) significa completare il dipinto in una sola sessione, mescolando i colori direttamente sulla tela ancora fresca. Usata da Velázquez, Hals, Singer Sargent. Veloce, spontanea, brillante.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Il metodo</div>
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-title">Toning della tela</div>
+          <div class="step-body">Coprire la tela con uno strato sottile di colore neutro diluito (Ocra + poco Burnt Umber). Asciugare con straccio per lasciare solo una velatura. Questo elimina il bianco abbacinante.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-title">Bloccare i valori scuri</div>
+          <div class="step-body">Con Burnt Umber diluito, stabilire velocemente le ombre principali. Non definire — solo masse. Le luci restano il fondo colorato della tela.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-title">Dipingere bagnato su bagnato</div>
+          <div class="step-body">Stendere i colori finali direttamente sulle zone ancora fresche. Le pennellate devono essere decise e non ritoccate — ogni passaggio ulteriore sporca la freschezza. La regola di Sargent: <em>"Paint the colour you see, not the colour you think."</em></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-title">Luci in impasto finale</div>
+          <div class="step-body">Le luci più alte si applicano per ultime con pasta densa, con pennellate ferme e definitive. Mai tornare su di esse.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quando funziona — quando no</div>
+      <div class="prop-row"><div class="prop-key" style="min-width:80px">✓ Ideale per</div><div class="prop-val">Ritratti, figure, paesaggi en plein air, studi rapidi. Qualsiasi soggetto che richieda freschezza e spontaneità.</div></div>
+      <div class="prop-row" style="border-bottom:none"><div class="prop-key" style="min-width:80px">✗ Evitare se</div><div class="prop-val">Vuoi dettagli molto precisi o velature sottili su grandi superfici. L'alla prima non perdona le indecisioni.</div></div>
+    </div>
+
+    <!-- ══ TECNICA OLANDESE / FIAMMINGA ══ -->
+    <div class="sec-head" style="margin-top:28px">
+      <h2>Tecnica Fiamminga</h2>
+      <div class="sub">Strati multipli — trasparenza e luminosità interna</div>
+    </div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      Il metodo dei Fiamminghi (van Eyck, Vermeer, Rembrandt) costruisce la pittura in strati separati, ciascuno con una funzione precisa. La luce penetra gli strati trasparenti e rimbalza dal fondo bianco — da qui la luminosità ineguagliabile.
+    </div>
+
+    <div class="card">
+      <div class="card-title">I 5 strati del metodo fiammingo</div>
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-title">Imprimatura bianca</div>
+          <div class="step-body">Fondo bianco o bianco-gesso. La luce deve avere un fondo chiaro da cui rimbalzare attraverso tutti gli strati successivi.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-title">Abbozzo in grisaille</div>
+          <div class="step-body">Disegno e modellato completo in bianco e nero (o terra + bianco). Tutti i valori definitivi. Lasciare asciugare completamente.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-title">Velature colorate trasparenti</div>
+          <div class="step-body">Strati sottili di colore puro trasparente (Alizarin, Viridian, Prussian) diluiti in olio. Ogni velatura modiifica il tono senza coprire i valori sottostanti. Asciugare tra uno strato e l'altro.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-title">Strati coprenti sulle luci</div>
+          <div class="step-body">Applicare colori opachi densi solo nelle zone di luce. Le ombre rimangono trasparenti. Questo contrasto crea profondità spaziale.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <div class="step-title">Velatura finale di unificazione</div>
+          <div class="step-body">Una velatura finale molto sottile (spesso giallo o ambra) unifica tono e temperatura dell'intero dipinto. Questa è la "vernice vivente" dei maestri.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TECNICA EN PLEIN AIR ══ -->
+    <div class="sec-head" style="margin-top:28px">
+      <h2>Tecnica En Plein Air</h2>
+      <div class="sub">Dipingere all'aperto — Impressionisti e oltre</div>
+    </div>
+    <div class="sec-divider"></div>
+
+    <div class="infobox">
+      Corot, Monet, Pissarro, Cézanne — tutti dipingevano all'aperto per catturare la luce reale. La tecnica richiede velocità, sintesi e la capacità di semplificare istantaneamente ciò che si vede.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Palette essenziale en plein air</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0">
+        <div class="pal-item"><div class="pal-swatch" style="background:#f0ece2;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)"></div><div class="pal-name">Tit. White</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#e8c418"></div><div class="pal-name">Cad. Yellow</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#c89840"></div><div class="pal-name">Yel. Ochre</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#d03c28"></div><div class="pal-name">Cad. Red</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#3064a8"></div><div class="pal-name">Cobalt Blue</div></div>
+        <div class="pal-item"><div class="pal-swatch" style="background:#307656"></div><div class="pal-name">Viridian</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Principi del plein air</div>
+      <div class="tip-card" style="margin-bottom:8px;padding:10px">
+        <div class="tip-num">1</div>
+        <div class="tip-body"><div class="tip-title">Prima i valori, non i colori</div><div class="tip-text">La luce cambia in minuti. Stabilisci subito le masse chiaro/scuro. Il colore preciso è secondario.</div></div>
+      </div>
+      <div class="tip-card" style="margin-bottom:8px;padding:10px">
+        <div class="tip-num">2</div>
+        <div class="tip-body"><div class="tip-title">Mescola pochi colori — sporcati le mani</div><div class="tip-text">Ogni minuto alla tavolozza è un minuto perso a osservare. Semplifica le miscele al massimo.</div></div>
+      </div>
+      <div class="tip-card" style="margin-bottom:8px;padding:10px">
+        <div class="tip-num">3</div>
+        <div class="tip-body"><div class="tip-title">Ombre fredde, luci calde (o viceversa)</div><div class="tip-text">All'aperto la luce solare è calda → ombre fredde. Cielo coperto = luce fredda → ombre calde. Questa coppia è tutto il plein air.</div></div>
+      </div>
+      <div class="tip-card" style="padding:10px">
+        <div class="tip-num">4</div>
+        <div class="tip-body"><div class="tip-title">Finisci in 2 ore o ricomincia</div><div class="tip-text">Dopo 2 ore la luce è radicalmente diversa. Meglio uno studio piccolo e onesto che un dipinto grande e incoerente.</div></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin:24px 0 8px;font-size:10px;font-style:italic;color:var(--ink-ff);line-height:2">
+      Palette Zorn · Alla Prima · Fiamminga · En Plein Air · Lucian Freud<br>
+      © Pittura ad Olio Easy Recap
+    </div>
+
+  </div><!-- /nudo-tech -->
+</div>
+  </div>
+
+  <nav class="tabbar">
+  <label class="tab-lbl" for="tab-teoria"><span class="tab-icon">⬡</span><span class="tab-label">Teoria</span></label>
+  <label class="tab-lbl" for="tab-grisaille"><span class="tab-icon">◈</span><span class="tab-label">Grisaille</span></label>
+  <label class="tab-lbl" for="tab-ombre"><span class="tab-icon">◑</span><span class="tab-label">Ombre</span></label>
+  <label class="tab-lbl" for="tab-cassel"><span class="tab-icon">✦</span><span class="tab-label">Cassel</span></label>
+  <label class="tab-lbl" for="tab-palette"><span class="tab-icon">⬛</span><span class="tab-label">Palette</span></label>
+  <label class="tab-lbl" for="tab-nudo"><span class="tab-icon">✿</span><span class="tab-label">Figura</span></label>
+  </nav>
+
+</div>
+
+<script>
+// ── Palette sub-nav ────────────────────────────────────────────────
+function showPalSub(id, btn) {
+  document.querySelectorAll('#s-palette .snav').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('pal-mix').style.display      = id === 'mix'      ? '' : 'none';
+  document.getElementById('pal-ten').style.display      = id === 'ten'      ? '' : 'none';
+  document.getElementById('pal-casorati').style.display = id === 'casorati' ? '' : 'none';
+  if (id === 'ten' && !document.getElementById('palette-list').children.length) renderPalettes();
+  if (id === 'mix' && !document.getElementById('wc-card').children.length) renderWC();
+}
+
+// ── Nudo sub-nav ───────────────────────────────────────────────────
+function showNudoSub(id, btn) {
+  document.querySelectorAll('#s-nudo .snav').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  ['incarnato','zones','tech'].forEach(function(k){
+    document.getElementById('nudo-'+k).style.display = k === id ? '' : 'none';
+  });
+}
+
+// ── Colour mixing helpers ──────────────────────────────────────────
+function mixHex(a, b, t) {
+  var ah=a.replace('#',''), bh=b.replace('#','');
+  var ar=[parseInt(ah.slice(0,2),16),parseInt(ah.slice(2,4),16),parseInt(ah.slice(4,6),16)];
+  var br=[parseInt(bh.slice(0,2),16),parseInt(bh.slice(2,4),16),parseInt(bh.slice(4,6),16)];
+  var r=ar.map(function(v,i){ return Math.round(v*(1-t)+br[i]*t); });
+  return '#'+r.map(function(v){ return v.toString(16).padStart(2,'0'); }).join('');
+}
+
+var wcPairs = [
+  ['#a04e26','Burnt Sienna', '#004a5a','Prussian Blue'],
+  ['#cca248','Yellow Ochre', '#203080','Ultramarine'],
+  ['#d03c28','Cadmium Red',  '#307656','Viridian'],
+  ['#eed282','Naples Yellow','#3064a8','Cobalt Blue'],
+  ['#bc7832','Raw Sienna',   '#5e4a30','Raw Umber'],
+  ['#8c1c30','Alizarin',     '#4e7028','Sap Green']
+];
+
+function renderWC() {
+  var c = document.getElementById('wc-card');
+  if (!c) return;
+  c.innerHTML = wcPairs.map(function(p){
+    var wc=p[0],wn=p[1],cc=p[2],cn=p[3];
+    var neu = mixHex(wc,cc,0.5);
+    return '<div class="wc-row">'
+      +'<div class="wc-chip" style="background:'+wc+'"></div>'
+      +'<div class="wc-name">'+wn+'</div>'
+      +'<div style="font-size:10px;color:var(--ink-ff)">↔</div>'
+      +'<div class="wc-neutral" style="background:'+neu+'"></div>'
+      +'<div style="font-size:10px;color:var(--ink-ff)">↔</div>'
+      +'<div class="wc-chip" style="background:'+cc+'"></div>'
+      +'<div class="wc-name">'+cn+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+
+// Init
+renderWC();
+</script>
+</body>
+</html>
