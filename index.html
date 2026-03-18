@@ -12,12 +12,37 @@
 
 /* ══ RESET ══════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; font-size: 16px; -webkit-text-size-adjust: 100%; }
+html { height: 100%; font-size: 16px; -webkit-text-size-adjust: 100%; }
 body {
   font-family: 'Lora', Georgia, serif;
-  background: #f7f1e5;
+  background: #d4c8b0;
   color: #28180e;
   -webkit-font-smoothing: antialiased;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Desktop: show as centered phone frame ── */
+#app {
+  width: 100%;
+  max-width: 480px;
+  height: 100dvh;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,.25);
+  position: relative;
+}
+@media (min-width: 520px) {
+  body { overflow: hidden; }
+  #app { height: 100vh; border-radius: 20px; }
+}
+/* Extra space for hosting banners (tiiny.host etc) */
+@media (max-height: 700px), (min-width: 520px) {
+  .tabbar { padding-bottom: max(var(--safe-b), 56px); }
+}
+@media (max-width: 519px) {
+  body { background: #f7f1e5; }
 }
 
 /* ══ CSS VARIABLES ════════════════════════════════════════════════ */
