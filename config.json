@@ -1,0 +1,27 @@
+{
+  "risk_profile": "moderate",
+  "currency": "EUR",
+  "revolut_plan": "standard",
+
+  "risk_rules": {
+    "max_single_position_pct": 20,
+    "min_cash_reserve_pct": 15,
+    "default_stop_loss_pct": -15,
+    "default_take_profit_pct": 30,
+    "max_crypto_allocation_pct": 10,
+    "max_single_sector_pct": 35
+  },
+
+  "alerts": {
+    "daily_change_threshold_pct": 5,
+    "volume_anomaly_multiplier": 2.0,
+    "rsi_oversold": 30,
+    "rsi_overbought": 70
+  },
+
+  "display": {
+    "top_movers_count": 5,
+    "max_news_items": 5,
+    "history_days_default": 30
+  }
+}

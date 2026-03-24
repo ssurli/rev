@@ -1,0 +1,34 @@
+{
+  "_note": "Aggiorna questo file manualmente dopo ogni operazione nell'app Revolut",
+  "cash_eur": 500.00,
+  "last_updated": "2025-01-01T00:00:00",
+  "positions": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "asset_type": "stock",
+      "quantity": 5,
+      "avg_price": 185.00,
+      "currency": "USD",
+      "notes": "Acquistato 2024-06-01"
+    },
+    {
+      "symbol": "VOO",
+      "name": "Vanguard S&P 500 ETF",
+      "asset_type": "etf",
+      "quantity": 2,
+      "avg_price": 450.00,
+      "currency": "USD",
+      "notes": "Piano di accumulo mensile"
+    },
+    {
+      "symbol": "BTC-USD",
+      "name": "Bitcoin",
+      "asset_type": "crypto",
+      "quantity": 0.01,
+      "avg_price": 45000.00,
+      "currency": "USD",
+      "notes": ""
+    }
+  ]
+}

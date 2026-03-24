@@ -1,0 +1,6 @@
+{
+  "stocks": ["AAPL", "MSFT", "NVDA", "GOOGL"],
+  "etf": ["VOO", "QQQ", "IWDA.AS"],
+  "crypto": ["BTC-USD", "ETH-USD"],
+  "commodities": ["GC=F", "SI=F"]
+}
