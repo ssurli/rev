@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
@@ -24,6 +25,9 @@ def _conn():
 
 def init_db() -> None:
     """Create tables if they don't exist."""
+    # Restrict DB file to owner only (rw-------)
+    DB_PATH.touch(exist_ok=True)
+    os.chmod(DB_PATH, 0o600)
     with _conn() as con:
         con.executescript("""
         CREATE TABLE IF NOT EXISTS news_items (
@@ -81,6 +85,20 @@ def init_db() -> None:
             risk_score      INTEGER,
             risk_label      TEXT,
             positions_json  TEXT,
+            created_at      TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS forecasts (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id        TEXT,
+            symbol          TEXT,
+            forecast_score  REAL,
+            direction       TEXT,
+            confidence      REAL,
+            horizon         TEXT,
+            reasoning       TEXT,
+            sentiment_score REAL,
+            tech_score      REAL,
             created_at      TEXT DEFAULT (datetime('now'))
         );
         """)
@@ -159,3 +177,92 @@ def load_latest_portfolio() -> dict | None:
     d = dict(row)
     d["positions"] = json.loads(d["positions_json"])
     return d
+
+
+def get_portfolio_history(limit: int = 48) -> list[dict]:
+    """Return last N portfolio snapshots for P&L chart."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT created_at, total_value_eur, cash_eur, risk_score, risk_label "
+            "FROM portfolio_snapshots ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in reversed(rows)]
+
+
+def get_recent_news(limit: int = 30) -> list[dict]:
+    """Return most recent news items."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT title, source, url, published_at, created_at "
+            "FROM news_items ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_latest_sentiment() -> list[dict]:
+    """Return latest sentiment score per asset (one row per symbol)."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT symbol, score, headlines, created_at "
+            "FROM sentiment_history "
+            "WHERE created_at = (SELECT MAX(created_at) FROM sentiment_history s2 WHERE s2.symbol = sentiment_history.symbol) "
+            "ORDER BY ABS(score) DESC",
+        ).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["headlines"] = json.loads(d["headlines"])
+        result.append(d)
+    return result
+
+
+def get_recent_orders(limit: int = 50) -> list[dict]:
+    """Return recent orders."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT order_id, created_at, symbol, action, amount_eur, price_eur, status, mode "
+            "FROM orders ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_recent_signals(limit: int = 50) -> list[dict]:
+    """Return recent validated signals."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT created_at, symbol, action, confidence, amount_eur, reason, sentiment, validated "
+            "FROM signals ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+# --- forecasts ---
+
+def save_forecasts(cycle_id: str, forecasts: list[dict]) -> None:
+    with _conn() as con:
+        for f in forecasts:
+            con.execute(
+                "INSERT INTO forecasts "
+                "(cycle_id, symbol, forecast_score, direction, confidence, horizon, reasoning, sentiment_score, tech_score) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (cycle_id, f["symbol"], f["forecast_score"], f["direction"],
+                 f["confidence"], f["horizon"], f["reasoning"],
+                 f["sentiment_score"], f["tech_score"]),
+            )
+
+
+def get_latest_forecasts() -> list[dict]:
+    """Return most recent forecast per symbol."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT symbol, forecast_score, direction, confidence, horizon, reasoning, "
+            "sentiment_score, tech_score, created_at "
+            "FROM forecasts "
+            "WHERE created_at = (SELECT MAX(f2.created_at) FROM forecasts f2 WHERE f2.symbol = forecasts.symbol) "
+            "ORDER BY ABS(forecast_score) DESC",
+        ).fetchall()
+    return [dict(r) for r in rows]

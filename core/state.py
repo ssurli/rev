@@ -22,13 +22,41 @@ class MarketData(TypedDict):
     asset_type: str  # crypto | etf | stock | commodity
 
 
+class TechnicalIndicators(TypedDict):
+    symbol: str
+    rsi: float              # 0-100
+    ma20: float             # 20-period moving average
+    ma50: float             # 50-period moving average
+    ma_cross: str           # golden | death | neutral
+    macd: float             # MACD line
+    macd_signal: float      # MACD signal line
+    macd_hist: float        # MACD histogram
+    bb_upper: float         # Bollinger Band upper
+    bb_lower: float         # Bollinger Band lower
+    bb_position: float      # 0=at lower, 1=at upper
+    momentum_5d: float      # % change over 5 days
+    tech_score: float       # [-1, +1] weighted composite
+
+
+class AssetForecast(TypedDict):
+    symbol: str
+    forecast_score: float   # [-1, +1] combined score
+    direction: str          # BULLISH | BEARISH | NEUTRAL
+    confidence: float       # 0.0 – 1.0
+    horizon: str            # short | medium
+    reasoning: str          # Italian explanation
+    sentiment_score: float
+    tech_score: float
+
+
 class TradingSignal(TypedDict):
     symbol: str
     action: Literal["BUY", "SELL", "HOLD", "TRIM"]
-    confidence: float   # 0.0 – 1.0
-    amount_eur: float   # how much to buy/sell
+    confidence: float
+    amount_eur: float
     reason: str
     sentiment_score: float
+    forecast_score: float
     price_eur: float
 
 
@@ -46,9 +74,9 @@ class PortfolioSnapshot(TypedDict):
     positions: list[Position]
     cash_eur: float
     total_value_eur: float
-    risk_score: int        # 0-100 (revolut_invest_v3 formula)
-    risk_label: str        # Basso | Medio | Alto
-    allocations: dict[str, float]   # symbol -> % of total
+    risk_score: int
+    risk_label: str
+    allocations: dict[str, float]
 
 
 class Order(TypedDict):
@@ -57,8 +85,8 @@ class Order(TypedDict):
     action: str
     amount_eur: float
     price_eur: float
-    status: str       # submitted | filled | rejected | simulated
-    mode: str         # paper | live
+    status: str
+    mode: str
     timestamp: str
 
 
@@ -69,11 +97,15 @@ class BotState(TypedDict):
     # --- news ---
     news_items: list[NewsItem]
     # --- sentiment ---
-    sentiment_scores: dict[str, float]      # symbol -> [-1.0, 1.0]
-    asset_mentions: dict[str, list[str]]    # symbol -> [headline, ...]
+    sentiment_scores: dict[str, float]
+    asset_mentions: dict[str, list[str]]
     # --- market ---
-    market_data: dict[str, MarketData]      # symbol -> data
+    market_data: dict[str, MarketData]
     eur_usd: float
+    # --- technical analysis ---
+    technical_indicators: dict[str, TechnicalIndicators]
+    # --- forecast (sentiment + technical + Claude synthesis) ---
+    forecasts: dict[str, AssetForecast]
     # --- strategy ---
     signals: list[TradingSignal]
     # --- risk ---

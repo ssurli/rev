@@ -64,29 +64,38 @@ def _parse_forecasts(raw: str, symbols: list[str]) -> dict[str, dict]:
 
 
 def _fallback_forecast(sym: str, sentiment: float, tech: float, technicals: dict) -> AssetForecast:
+    """Rule-based forecast when Claude is unavailable — uses technical indicators only."""
+    # Weight: tech 70%, sentiment 30% (sentiment=0 when no API)
     score = sentiment * 0.30 + tech * 0.70
+
     rsi = technicals.get("rsi", 50.0)
     ma_cross = technicals.get("ma_cross", "neutral")
     momentum = technicals.get("momentum_5d", 0.0)
+
+    # Direction based on tech score (lower threshold without sentiment)
     if score > 0.10 or (ma_cross == "golden" and rsi < 65):
         direction = "BULLISH"
     elif score < -0.10 or (ma_cross == "death" and rsi > 35):
         direction = "BEARISH"
     else:
         direction = "NEUTRAL"
+
+    # Build reasoning from indicators
     reasons = []
-    if ma_cross == "golden": reasons.append("golden cross (MA20>MA50)")
-    elif ma_cross == "death": reasons.append("death cross (MA20<MA50)")
-    if rsi < 35: reasons.append(f"RSI oversold ({rsi:.0f})")
-    elif rsi > 65: reasons.append(f"RSI overbought ({rsi:.0f})")
-    if momentum > 3: reasons.append(f"momentum positivo +{momentum:.1f}% 5gg")
-    elif momentum < -3: reasons.append(f"momentum negativo {momentum:.1f}% 5gg")
+    if ma_cross == "golden":
+        reasons.append("golden cross (MA20>MA50)")
+    elif ma_cross == "death":
+        reasons.append("death cross (MA20<MA50)")
+    if rsi < 35:
+        reasons.append(f"RSI oversold ({rsi:.0f})")
+    elif rsi > 65:
+        reasons.append(f"RSI overbought ({rsi:.0f})")
+    if momentum > 3:
+        reasons.append(f"momentum positivo +{momentum:.1f}% 5gg")
+    elif momentum < -3:
+        reasons.append(f"momentum negativo {momentum:.1f}% 5gg")
+
     reasoning = ("Analisi tecnica: " + ", ".join(reasons)) if reasons else f"Tecnico neutro (score={score:.2f})"
-    return AssetForecast(
-        symbol=sym, forecast_score=round(score, 3), direction=direction,
-        confidence=min(abs(score) + 0.3, 0.75), horizon="short",
-        reasoning=reasoning, sentiment_score=sentiment, tech_score=tech,
-    )
 
     return AssetForecast(
         symbol=sym,
