@@ -44,7 +44,7 @@ Do not include any explanation, only the JSON."""
 
 def _score_batch(headlines: list[str], asset_symbols: list[str]) -> dict[str, float]:
     """Ask Claude to score up to 10 headlines at once for all assets."""
-    if not headlines or not ANTHROPIC_API_KEY:
+    if not headlines or not ANTHROPIC_API_KEY or not ANTHROPIC_API_KEY.strip():
         return {sym: 0.0 for sym in asset_symbols}
 
     headlines_text = "\n".join(f"- {h}" for h in headlines[:10])

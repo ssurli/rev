@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
@@ -24,6 +25,9 @@ def _conn():
 
 def init_db() -> None:
     """Create tables if they don't exist."""
+    # Restrict DB file to owner only (rw-------)
+    DB_PATH.touch(exist_ok=True)
+    os.chmod(DB_PATH, 0o600)
     with _conn() as con:
         con.executescript("""
         CREATE TABLE IF NOT EXISTS news_items (

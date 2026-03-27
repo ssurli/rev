@@ -48,9 +48,19 @@ STOP_LOSS_PCT: float = _float("STOP_LOSS_PCT", -15.0)
 TAKE_PROFIT_PCT: float = _float("TAKE_PROFIT_PCT", 30.0)
 MAX_CRYPTO_PCT: float = _float("MAX_CRYPTO_PCT", 15.0)
 
-# Assets
+# Whitelist of allowed asset symbols (prevents injection via .env)
+ALLOWED_SYMBOLS: set[str] = {
+    "BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD", "XRP-USD",
+    "VOO", "QQQ", "SPY", "IVV", "VTI", "ARKK",
+    "GLD", "SLV", "GC=F", "CL=F", "OIL",
+    "EUR=X", "GBP=X", "JPY=X",
+    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META",
+}
+
+# Assets — only keep symbols that are in the whitelist
 ASSETS: list[str] = [
     a.strip() for a in os.getenv("ASSETS", "BTC-USD,ETH-USD,VOO,GLD,QQQ").split(",")
+    if a.strip() in ALLOWED_SYMBOLS
 ]
 
 # EUR/USD exchange rate (fallback if live fetch fails)

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote_plus
 
 import xml.etree.ElementTree as ET
 
