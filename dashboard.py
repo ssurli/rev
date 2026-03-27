@@ -181,8 +181,8 @@ macro_data = load_macro_cached()
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_portfolio, tab_markets, tab_forecast, tab_macro, tab_news, tab_orders = st.tabs(
-    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "🏦 Macro", "📰 Notizie", "📋 Ordini"]
+tab_portfolio, tab_markets, tab_forecast, tab_macro, tab_news, tab_orders, tab_chat = st.tabs(
+    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "🏦 Macro", "📰 Notizie", "📋 Ordini", "💬 Analista AI"]
 )
 
 # ===========================================================================
@@ -588,3 +588,106 @@ with tab_orders:
             )
         else:
             st.info("Nessun ordine eseguito.")
+
+# ===========================================================================
+# TAB 7 — ANALISTA AI (chat box)
+# ===========================================================================
+with tab_chat:
+    st.subheader("Analista Finanziario AI")
+    st.caption("Fai domande sul portfolio, sui mercati, sulle previsioni o sulla situazione macro. Risponde usando i dati reali del bot.")
+
+    # Build market context string for Claude
+    def _build_chat_context() -> str:
+        lines = [f"Data: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"]
+
+        if portfolio:
+            lines.append(f"\nPORTFOLIO: €{portfolio.get('total_value_eur', 0):.2f} totale | "
+                         f"€{portfolio.get('cash_eur', 0):.2f} cash | "
+                         f"{len(portfolio.get('positions', []))} posizioni | "
+                         f"risk={portfolio.get('risk_score', 0)}/100")
+            for p in portfolio.get("positions", []):
+                lines.append(f"  {p['symbol']}: {p['qty']:.4f} @ €{p['avg_price_eur']:.2f} | "
+                             f"P&L {p['pnl_pct']:+.1f}%")
+
+        if forecasts_data:
+            lines.append("\nFORECAST (ultimi):")
+            for f in forecasts_data[:8]:
+                lines.append(f"  {f['symbol']}: {f['direction']} score={f['forecast_score']:+.2f} "
+                             f"conf={f['confidence']:.0%} — {f.get('reasoning', '')[:80]}")
+
+        if macro_data:
+            lines.append("\nMACRO:")
+            for m in macro_data:
+                lines.append(f"  {m['name']} ({m['country']}): {m['value']:.2f} {m['unit']}")
+
+        if sentiment:
+            lines.append("\nSENTIMENT: " + " | ".join(
+                f"{s['symbol']}={s['score']:+.2f}" for s in sentiment[:8]
+            ))
+
+        if news:
+            lines.append("\nULTIME NOTIZIE:")
+            for n in news[:5]:
+                lines.append(f"  • {n['title']} [{n['source']}]")
+
+        return "\n".join(lines)
+
+    _CHAT_SYSTEM = (
+        "Sei un analista finanziario AI integrato in un investment bot. "
+        "Hai accesso ai dati in tempo reale di portfolio, forecast, indicatori macro e notizie. "
+        "Rispondi in italiano, in modo conciso e professionale. "
+        "Usa i dati forniti nel contesto per rispondere con precisione. "
+        "Non inventare dati che non hai. Se non hai informazioni sufficienti, dillo chiaramente."
+    )
+
+    # Initialize chat history in session state
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    # Display chat history
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Chat input
+    if prompt := st.chat_input("Chiedi all'analista AI... (es: 'Perché hai comprato GLD?' o 'Come vedi il mercato oggi?')"):
+        # Show user message
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Build response
+        with st.chat_message("assistant"):
+            with st.spinner("Analisi in corso..."):
+                from core.config import ANTHROPIC_API_KEY, CLAUDE_MODEL
+                if not ANTHROPIC_API_KEY:
+                    reply = "⚠️ ANTHROPIC_API_KEY non configurata. Aggiungi la chiave nel `.env` per usare l'analista AI."
+                else:
+                    try:
+                        import anthropic as _anthropic
+                        context = _build_chat_context()
+                        client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+                        messages_for_api = [
+                            {"role": "user", "content": f"Contesto dati bot:\n{context}\n\nDomanda: {m['content']}"}
+                            if m["role"] == "user" and i == 0
+                            else {"role": m["role"], "content": m["content"]}
+                            for i, m in enumerate(st.session_state.chat_history)
+                        ]
+                        response = client.messages.create(
+                            model=CLAUDE_MODEL,
+                            max_tokens=1024,
+                            system=_CHAT_SYSTEM,
+                            messages=messages_for_api,
+                        )
+                        reply = response.content[0].text
+                    except Exception as exc:
+                        reply = f"⚠️ Errore: {exc}"
+                st.markdown(reply)
+
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
+
+    # Clear chat button
+    if st.session_state.chat_history:
+        if st.button("🗑️ Cancella conversazione", key="clear_chat"):
+            st.session_state.chat_history = []
+            st.rerun()
