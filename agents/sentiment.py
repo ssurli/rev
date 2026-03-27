@@ -18,15 +18,31 @@ logger = logging.getLogger(__name__)
 
 # Map from normalized asset symbol -> search keywords
 ASSET_KEYWORDS: dict[str, list[str]] = {
+    # Crypto
     "BTC-USD":  ["bitcoin", "btc", "crypto", "cryptocurrency"],
     "ETH-USD":  ["ethereum", "eth", "ether", "crypto"],
-    "VOO":      ["s&p 500", "spx", "vanguard", "us stocks", "wall street", "nasdaq"],
-    "QQQ":      ["nasdaq", "tech stocks", "qqq", "technology", "big tech"],
+    "BNB-USD":  ["binance", "bnb"],
+    "SOL-USD":  ["solana", "sol"],
+    "XRP-USD":  ["ripple", "xrp"],
+    # ETF
+    "VOO":      ["s&p 500", "spx", "vanguard", "us stocks", "wall street"],
+    "QQQ":      ["nasdaq", "tech stocks", "technology", "big tech"],
+    "SPY":      ["s&p 500", "spx", "us stocks", "wall street"],
+    # Commodities
     "GLD":      ["gold", "oro", "precious metals", "safe haven", "xau"],
     "SLV":      ["silver", "precious metals", "xag"],
     "OIL":      ["oil", "crude", "brent", "wti", "energy", "opec", "petroleum"],
+    # Forex
     "EUR=X":    ["euro", "eur", "ecb", "eurozone"],
     "GBP=X":    ["pound", "gbp", "bank of england", "brexit"],
+    # Stocks
+    "AAPL":     ["apple", "iphone", "tim cook", "ios", "mac", "app store"],
+    "TSLA":     ["tesla", "elon musk", "electric vehicle", "ev", "cybertruck"],
+    "NVDA":     ["nvidia", "jensen huang", "gpu", "ai chip", "semiconductor", "cuda"],
+    "MSFT":     ["microsoft", "satya nadella", "azure", "openai", "windows", "copilot"],
+    "GOOGL":    ["google", "alphabet", "sundar pichai", "search", "gemini", "youtube"],
+    "AMZN":     ["amazon", "andy jassy", "aws", "prime", "alexa"],
+    "META":     ["meta", "mark zuckerberg", "facebook", "instagram", "threads", "whatsapp"],
 }
 
 # Add any extra assets from config that aren't in the map
@@ -44,7 +60,7 @@ Do not include any explanation, only the JSON."""
 
 def _score_batch(headlines: list[str], asset_symbols: list[str]) -> dict[str, float]:
     """Ask Claude to score up to 10 headlines at once for all assets."""
-    if not headlines or not ANTHROPIC_API_KEY:
+    if not headlines or not ANTHROPIC_API_KEY or not ANTHROPIC_API_KEY.strip():
         return {sym: 0.0 for sym in asset_symbols}
 
     headlines_text = "\n".join(f"- {h}" for h in headlines[:10])
@@ -83,32 +99,29 @@ def run(state: BotState) -> BotState:
 
     monitored = [s for s in ASSETS if s in ASSET_KEYWORDS]
 
-    # Pre-filter: only headlines that mention at least one known keyword
-    relevant: list[str] = []
+    # Build mentions map (keyword match) and collect ALL headlines for Claude
+    # Macro news (Fed, tariffs, recession) affect all assets even without explicit mention
+    all_headlines: list[str] = [item["title"] for item in news]
     mentions: dict[str, list[str]] = {sym: [] for sym in monitored}
 
     for item in news:
         title_lower = item["raw_text"].lower()
-        touched: list[str] = []
         for sym, kws in ASSET_KEYWORDS.items():
             if sym not in monitored:
                 continue
             if any(kw in title_lower for kw in kws):
-                touched.append(sym)
                 mentions[sym].append(item["title"])
-        if touched:
-            relevant.append(item["title"])
 
-    if not relevant:
-        logger.info("SentimentAgent: no relevant headlines found")
+    if not all_headlines:
+        logger.info("SentimentAgent: no headlines to process")
         state["sentiment_scores"] = {sym: 0.0 for sym in monitored}
         state["asset_mentions"] = mentions
         return state
 
-    # Score in batches of 10
+    # Score in batches of 10 — use ALL headlines, not just keyword-matched ones
     aggregated: dict[str, list[float]] = {sym: [] for sym in monitored}
-    for i in range(0, len(relevant), 10):
-        batch = relevant[i : i + 10]
+    for i in range(0, len(all_headlines), 10):
+        batch = all_headlines[i : i + 10]
         scores = _score_batch(batch, monitored)
         for sym in monitored:
             val = scores.get(sym, 0.0)
