@@ -163,3 +163,64 @@ def load_latest_portfolio() -> dict | None:
     d = dict(row)
     d["positions"] = json.loads(d["positions_json"])
     return d
+
+
+def get_portfolio_history(limit: int = 48) -> list[dict]:
+    """Return last N portfolio snapshots for P&L chart."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT created_at, total_value_eur, cash_eur, risk_score, risk_label "
+            "FROM portfolio_snapshots ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in reversed(rows)]
+
+
+def get_recent_news(limit: int = 30) -> list[dict]:
+    """Return most recent news items."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT title, source, url, published_at, created_at "
+            "FROM news_items ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_latest_sentiment() -> list[dict]:
+    """Return latest sentiment score per asset (one row per symbol)."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT symbol, score, headlines, created_at "
+            "FROM sentiment_history "
+            "WHERE created_at = (SELECT MAX(created_at) FROM sentiment_history s2 WHERE s2.symbol = sentiment_history.symbol) "
+            "ORDER BY ABS(score) DESC",
+        ).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["headlines"] = json.loads(d["headlines"])
+        result.append(d)
+    return result
+
+
+def get_recent_orders(limit: int = 50) -> list[dict]:
+    """Return recent orders."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT order_id, created_at, symbol, action, amount_eur, price_eur, status, mode "
+            "FROM orders ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_recent_signals(limit: int = 50) -> list[dict]:
+    """Return recent validated signals."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT created_at, symbol, action, confidence, amount_eur, reason, sentiment, validated "
+            "FROM signals ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
