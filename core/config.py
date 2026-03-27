@@ -59,7 +59,9 @@ ALLOWED_SYMBOLS: set[str] = {
 
 # Assets — only keep symbols that are in the whitelist
 ASSETS: list[str] = [
-    a.strip() for a in os.getenv("ASSETS", "BTC-USD,ETH-USD,VOO,GLD,QQQ").split(",")
+    a.strip() for a in os.getenv(
+        "ASSETS", "BTC-USD,ETH-USD,VOO,GLD,QQQ,AAPL,TSLA,NVDA"
+    ).split(",")
     if a.strip() in ALLOWED_SYMBOLS
 ]
 

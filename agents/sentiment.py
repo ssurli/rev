@@ -18,15 +18,31 @@ logger = logging.getLogger(__name__)
 
 # Map from normalized asset symbol -> search keywords
 ASSET_KEYWORDS: dict[str, list[str]] = {
+    # Crypto
     "BTC-USD":  ["bitcoin", "btc", "crypto", "cryptocurrency"],
     "ETH-USD":  ["ethereum", "eth", "ether", "crypto"],
-    "VOO":      ["s&p 500", "spx", "vanguard", "us stocks", "wall street", "nasdaq"],
-    "QQQ":      ["nasdaq", "tech stocks", "qqq", "technology", "big tech"],
+    "BNB-USD":  ["binance", "bnb"],
+    "SOL-USD":  ["solana", "sol"],
+    "XRP-USD":  ["ripple", "xrp"],
+    # ETF
+    "VOO":      ["s&p 500", "spx", "vanguard", "us stocks", "wall street"],
+    "QQQ":      ["nasdaq", "tech stocks", "technology", "big tech"],
+    "SPY":      ["s&p 500", "spx", "us stocks", "wall street"],
+    # Commodities
     "GLD":      ["gold", "oro", "precious metals", "safe haven", "xau"],
     "SLV":      ["silver", "precious metals", "xag"],
     "OIL":      ["oil", "crude", "brent", "wti", "energy", "opec", "petroleum"],
+    # Forex
     "EUR=X":    ["euro", "eur", "ecb", "eurozone"],
     "GBP=X":    ["pound", "gbp", "bank of england", "brexit"],
+    # Stocks
+    "AAPL":     ["apple", "iphone", "tim cook", "ios", "mac", "app store"],
+    "TSLA":     ["tesla", "elon musk", "electric vehicle", "ev", "cybertruck"],
+    "NVDA":     ["nvidia", "jensen huang", "gpu", "ai chip", "semiconductor", "cuda"],
+    "MSFT":     ["microsoft", "satya nadella", "azure", "openai", "windows", "copilot"],
+    "GOOGL":    ["google", "alphabet", "sundar pichai", "search", "gemini", "youtube"],
+    "AMZN":     ["amazon", "andy jassy", "aws", "prime", "alexa"],
+    "META":     ["meta", "mark zuckerberg", "facebook", "instagram", "threads", "whatsapp"],
 }
 
 # Add any extra assets from config that aren't in the map

@@ -4,10 +4,11 @@ Avvio:
     streamlit run dashboard.py
 
 Mostra:
-  - Tab Portfolio : valore totale, P&L, risk score, allocazione
-  - Tab Mercati   : grafico prezzi real-time per ogni asset
-  - Tab Notizie   : feed notizie + sentiment per asset
-  - Tab Ordini    : storico segnali e ordini eseguiti
+  - Tab Portfolio   : valore totale, P&L, risk score, allocazione
+  - Tab Mercati     : grafico prezzi real-time per ogni asset
+  - Tab Previsioni  : forecast multi-fattore + indicatori tecnici
+  - Tab Notizie     : feed notizie + sentiment per asset
+  - Tab Ordini      : storico segnali e ordini eseguiti
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ import yfinance as yf
 
 from core.config import ASSETS, TRADING_MODE
 from core.db import (
+    get_latest_forecasts,
     get_latest_sentiment,
     get_portfolio_history,
     get_recent_news,
@@ -146,6 +148,11 @@ def load_signals_cached() -> list[dict]:
     return get_recent_signals(50)
 
 
+@st.cache_data(ttl=60)
+def load_forecasts_cached() -> list[dict]:
+    return get_latest_forecasts()
+
+
 # ---------------------------------------------------------------------------
 # Load all data
 # ---------------------------------------------------------------------------
@@ -156,12 +163,13 @@ news = load_news_cached()
 sentiment = load_sentiment_cached()
 orders = load_orders_cached()
 signals = load_signals_cached()
+forecasts_data = load_forecasts_cached()
 
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_portfolio, tab_markets, tab_news, tab_orders = st.tabs(
-    ["💼 Portfolio", "📊 Mercati", "📰 Notizie", "📋 Ordini"]
+tab_portfolio, tab_markets, tab_forecast, tab_news, tab_orders = st.tabs(
+    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "📰 Notizie", "📋 Ordini"]
 )
 
 # ===========================================================================
@@ -302,7 +310,93 @@ with tab_markets:
             st.plotly_chart(fig, use_container_width=True)
 
 # ===========================================================================
-# TAB 3 — NOTIZIE
+# TAB 3 — PREVISIONI
+# ===========================================================================
+with tab_forecast:
+    if not forecasts_data:
+        st.info("Nessuna previsione disponibile. Avvia `python main.py` per generare forecasts.")
+    else:
+        st.subheader("Previsioni per asset")
+
+        # Direction summary cards
+        bullish = [f for f in forecasts_data if f["direction"] == "BULLISH"]
+        bearish = [f for f in forecasts_data if f["direction"] == "BEARISH"]
+        neutral = [f for f in forecasts_data if f["direction"] == "NEUTRAL"]
+        c1, c2, c3 = st.columns(3)
+        c1.metric("🟢 BULLISH", len(bullish))
+        c2.metric("🔴 BEARISH", len(bearish))
+        c3.metric("⚪ NEUTRAL", len(neutral))
+        st.divider()
+
+        # Forecast table
+        col_fc, col_tech = st.columns([3, 2])
+
+        with col_fc:
+            st.subheader("Forecast multi-fattore")
+            for f in forecasts_data:
+                dir_emoji = "🟢" if f["direction"] == "BULLISH" else ("🔴" if f["direction"] == "BEARISH" else "⚪")
+                score = f["forecast_score"]
+                conf = f["confidence"]
+                with st.container():
+                    c_sym, c_dir, c_score, c_conf = st.columns([2, 2, 2, 2])
+                    c_sym.markdown(f"**{f['symbol']}**")
+                    c_dir.markdown(f"{dir_emoji} {f['direction']}")
+                    c_score.markdown(f"Score: `{score:+.2f}`")
+                    c_conf.markdown(f"Conf: `{conf:.0%}`")
+                    if f.get("reasoning"):
+                        st.caption(f"💬 {f['reasoning']}")
+                    st.divider()
+
+        with col_tech:
+            st.subheader("Indicatori tecnici")
+            # Build heatmap data from market + forecast
+            tech_rows = []
+            for f in forecasts_data:
+                sym = f["symbol"]
+                md = market.get(sym, {})
+                tech_rows.append({
+                    "Asset": sym,
+                    "Score": f["tech_score"],
+                    "Sentiment": f["sentiment_score"],
+                    "24h %": md.get("change_pct_24h", 0.0),
+                })
+            if tech_rows:
+                df_tech = pd.DataFrame(tech_rows)
+                fig = go.Figure(data=go.Heatmap(
+                    z=df_tech[["Score", "Sentiment", "24h %"]].values.T,
+                    x=df_tech["Asset"].tolist(),
+                    y=["Tech Score", "Sentiment", "24h %"],
+                    colorscale="RdYlGn",
+                    zmid=0,
+                    text=df_tech[["Score", "Sentiment", "24h %"]].values.T.round(2),
+                    texttemplate="%{text}",
+                ))
+                fig.update_layout(height=220, margin=dict(t=10, b=10, l=10, r=10))
+                st.plotly_chart(fig, use_container_width=True)
+
+        # Forecast score bar chart
+        st.subheader("Score previsionale per asset")
+        df_fc = pd.DataFrame(forecasts_data)
+        df_fc["color"] = df_fc["direction"].map(
+            {"BULLISH": "Positivo", "BEARISH": "Negativo", "NEUTRAL": "Neutro"}
+        )
+        fig = px.bar(
+            df_fc, x="symbol", y="forecast_score",
+            color="color",
+            color_discrete_map={"Positivo": "#00cc88", "Negativo": "#ff4444", "Neutro": "#aaaaaa"},
+            range_y=[-1, 1],
+            labels={"symbol": "Asset", "forecast_score": "Forecast Score"},
+            text="forecast_score",
+        )
+        fig.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+        fig.add_hline(y=0.35, line_dash="dot", line_color="green", annotation_text="BUY soglia")
+        fig.add_hline(y=-0.35, line_dash="dot", line_color="red", annotation_text="SELL soglia")
+        fig.update_layout(height=300, margin=dict(t=30, b=20), showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+
+
+# ===========================================================================
+# TAB 4 — NOTIZIE
 # ===========================================================================
 with tab_news:
     col_news, col_sent = st.columns([2, 1])
@@ -335,7 +429,7 @@ with tab_news:
             st.info("Nessun dato sentiment disponibile.")
 
 # ===========================================================================
-# TAB 4 — ORDINI
+# TAB 5 — ORDINI
 # ===========================================================================
 with tab_orders:
     col_sig, col_ord = st.columns([1, 1])

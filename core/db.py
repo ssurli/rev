@@ -87,6 +87,20 @@ def init_db() -> None:
             positions_json  TEXT,
             created_at      TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS forecasts (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id        TEXT,
+            symbol          TEXT,
+            forecast_score  REAL,
+            direction       TEXT,
+            confidence      REAL,
+            horizon         TEXT,
+            reasoning       TEXT,
+            sentiment_score REAL,
+            tech_score      REAL,
+            created_at      TEXT DEFAULT (datetime('now'))
+        );
         """)
 
 
@@ -222,5 +236,33 @@ def get_recent_signals(limit: int = 50) -> list[dict]:
             "SELECT created_at, symbol, action, confidence, amount_eur, reason, sentiment, validated "
             "FROM signals ORDER BY created_at DESC LIMIT ?",
             (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+# --- forecasts ---
+
+def save_forecasts(cycle_id: str, forecasts: list[dict]) -> None:
+    with _conn() as con:
+        for f in forecasts:
+            con.execute(
+                "INSERT INTO forecasts "
+                "(cycle_id, symbol, forecast_score, direction, confidence, horizon, reasoning, sentiment_score, tech_score) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (cycle_id, f["symbol"], f["forecast_score"], f["direction"],
+                 f["confidence"], f["horizon"], f["reasoning"],
+                 f["sentiment_score"], f["tech_score"]),
+            )
+
+
+def get_latest_forecasts() -> list[dict]:
+    """Return most recent forecast per symbol."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT symbol, forecast_score, direction, confidence, horizon, reasoning, "
+            "sentiment_score, tech_score, created_at "
+            "FROM forecasts "
+            "WHERE created_at = (SELECT MAX(f2.created_at) FROM forecasts f2 WHERE f2.symbol = forecasts.symbol) "
+            "ORDER BY ABS(forecast_score) DESC",
         ).fetchall()
     return [dict(r) for r in rows]
