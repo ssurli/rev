@@ -157,7 +157,7 @@ def run(state: BotState) -> BotState:
             client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
             msg = client.messages.create(
                 model=CLAUDE_MODEL,
-                max_tokens=1500,
+                max_tokens=4096,
                 system=_SYSTEM,
                 messages=[{"role": "user", "content": _build_prompt(asset_data, macro_data)}],
             )
