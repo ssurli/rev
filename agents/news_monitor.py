@@ -73,13 +73,9 @@ HIGH_IMPACT_KEYWORDS = [
 ]
 
 NEWSAPI_QUERIES = [
-    "Federal Reserve interest rate inflation",
-    "ECB European Central Bank rate decision",
-    "cryptocurrency bitcoin ethereum regulation",
-    "stock market S&P500 earnings forecast",
-    "tariff trade war sanctions geopolitical",
-    "oil gold commodities OPEC price",
-    "GDP unemployment recession economic data",
+    "Federal Reserve ECB interest rate inflation tariff",
+    "cryptocurrency bitcoin stock market earnings",
+    "gold oil recession GDP unemployment geopolitical",
     "merger acquisition IPO bankruptcy corporate",
 ]
 
