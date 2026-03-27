@@ -98,14 +98,9 @@ def _fallback_forecast(sym: str, sentiment: float, tech: float, technicals: dict
     reasoning = ("Analisi tecnica: " + ", ".join(reasons)) if reasons else f"Tecnico neutro (score={score:.2f})"
 
     return AssetForecast(
-        symbol=sym,
-        forecast_score=round(score, 3),
-        direction=direction,
-        confidence=min(abs(score) + 0.3, 0.75),  # base confidence 0.3 even with weak signal
-        horizon="short",
-        reasoning=reasoning,
-        sentiment_score=sentiment,
-        tech_score=tech,
+        symbol=sym, forecast_score=round(score, 3), direction=direction,
+        confidence=min(abs(score) + 0.3, 0.75), horizon="short",
+        reasoning=reasoning, sentiment_score=sentiment, tech_score=tech,
     )
 
 
