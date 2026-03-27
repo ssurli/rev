@@ -101,6 +101,19 @@ def init_db() -> None:
             tech_score      REAL,
             created_at      TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS economic_indicators (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id        TEXT,
+            indicator_id    TEXT,
+            name            TEXT,
+            value           REAL,
+            unit            TEXT,
+            country         TEXT,
+            source          TEXT,
+            created_at      TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_eco_indicator ON economic_indicators (indicator_id, created_at);
         """)
 
 
@@ -253,6 +266,43 @@ def save_forecasts(cycle_id: str, forecasts: list[dict]) -> None:
                  f["confidence"], f["horizon"], f["reasoning"],
                  f["sentiment_score"], f["tech_score"]),
             )
+
+
+def save_macro_indicators(cycle_id: str, indicators: list[dict]) -> None:
+    with _conn() as con:
+        for ind in indicators:
+            con.execute(
+                "INSERT INTO economic_indicators "
+                "(cycle_id, indicator_id, name, value, unit, country, source) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (cycle_id, ind["indicator_id"], ind["name"], ind["value"],
+                 ind["unit"], ind["country"], ind["source"]),
+            )
+
+
+def get_latest_macro() -> list[dict]:
+    """Return the most recent value per indicator."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT indicator_id, name, value, unit, country, source, created_at "
+            "FROM economic_indicators "
+            "WHERE created_at = ("
+            "  SELECT MAX(e2.created_at) FROM economic_indicators e2 "
+            "  WHERE e2.indicator_id = economic_indicators.indicator_id"
+            ") ORDER BY country, source, name",
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_macro_history(indicator_id: str, limit: int = 90) -> list[dict]:
+    """Return time series for a specific indicator (for charts)."""
+    with _conn() as con:
+        rows = con.execute(
+            "SELECT created_at, value FROM economic_indicators "
+            "WHERE indicator_id = ? ORDER BY created_at DESC LIMIT ?",
+            (indicator_id, limit),
+        ).fetchall()
+    return [dict(r) for r in reversed(rows)]
 
 
 def get_latest_forecasts() -> list[dict]:

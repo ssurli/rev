@@ -90,12 +90,23 @@ class Order(TypedDict):
     timestamp: str
 
 
+class MacroIndicator(TypedDict):
+    indicator_id: str   # e.g. FEDFUNDS, CPIAUCSL, ECB_MRO
+    name: str           # human-readable label
+    value: float
+    unit: str           # %, pts, pp, idx
+    country: str        # US, EU, China
+    source: str         # FRED, ECB, WorldBank
+
+
 class BotState(TypedDict):
     """Full state passed through the LangGraph workflow each cycle."""
     cycle_id: str
     mode: Literal["paper", "live"]
     # --- news ---
     news_items: list[NewsItem]
+    # --- macro economic indicators ---
+    macro_data: list[MacroIndicator]
     # --- sentiment ---
     sentiment_scores: dict[str, float]
     asset_mentions: dict[str, list[str]]

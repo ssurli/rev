@@ -32,7 +32,9 @@ import yfinance as yf
 from core.config import ASSETS, TRADING_MODE
 from core.db import (
     get_latest_forecasts,
+    get_latest_macro,
     get_latest_sentiment,
+    get_macro_history,
     get_portfolio_history,
     get_recent_news,
     get_recent_orders,
@@ -153,6 +155,16 @@ def load_forecasts_cached() -> list[dict]:
     return get_latest_forecasts()
 
 
+@st.cache_data(ttl=300)
+def load_macro_cached() -> list[dict]:
+    return get_latest_macro()
+
+
+@st.cache_data(ttl=300)
+def load_macro_history_cached(indicator_id: str) -> list[dict]:
+    return get_macro_history(indicator_id, limit=90)
+
+
 # ---------------------------------------------------------------------------
 # Load all data
 # ---------------------------------------------------------------------------
@@ -164,12 +176,13 @@ sentiment = load_sentiment_cached()
 orders = load_orders_cached()
 signals = load_signals_cached()
 forecasts_data = load_forecasts_cached()
+macro_data = load_macro_cached()
 
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_portfolio, tab_markets, tab_forecast, tab_news, tab_orders = st.tabs(
-    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "📰 Notizie", "📋 Ordini"]
+tab_portfolio, tab_markets, tab_forecast, tab_macro, tab_news, tab_orders = st.tabs(
+    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "🏦 Macro", "📰 Notizie", "📋 Ordini"]
 )
 
 # ===========================================================================
@@ -396,7 +409,110 @@ with tab_forecast:
 
 
 # ===========================================================================
-# TAB 4 — NOTIZIE
+# TAB 4 — MACRO
+# ===========================================================================
+with tab_macro:
+    st.subheader("Indicatori Macro-Economici")
+
+    if not macro_data:
+        st.info(
+            "Nessun dato macro. Aggiungi **FRED_API_KEY** nel `.env` "
+            "(chiave gratuita: [fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html)) "
+            "e avvia il bot."
+        )
+    else:
+        # Group by country
+        by_country: dict[str, list[dict]] = {}
+        for ind in macro_data:
+            by_country.setdefault(ind["country"], []).append(ind)
+
+        country_tabs = st.tabs(list(by_country.keys()))
+        for ctab, country in zip(country_tabs, by_country.keys()):
+            with ctab:
+                indicators = by_country[country]
+
+                # KPI cards — up to 4 per row
+                cols_per_row = 4
+                for i in range(0, len(indicators), cols_per_row):
+                    chunk = indicators[i:i + cols_per_row]
+                    cols = st.columns(len(chunk))
+                    for col, ind in zip(cols, chunk):
+                        # Color logic
+                        val = ind["value"]
+                        name = ind["name"]
+                        # Simple risk coloring: high CPI/VIX = red, low = green
+                        if "CPI" in name or "VIX" in name or "Spread" in name:
+                            delta_color = "inverse"  # high = bad
+                        elif "GDP" in name or "Consumer" in name:
+                            delta_color = "normal"   # high = good
+                        else:
+                            delta_color = "off"
+                        col.metric(
+                            label=name,
+                            value=f"{val:.2f} {ind['unit']}",
+                            delta=ind["source"],
+                            delta_color=delta_color,
+                        )
+
+                st.divider()
+
+                # Indicator history chart
+                indicator_names = {ind["indicator_id"]: ind["name"] for ind in indicators}
+                selected_ind = st.selectbox(
+                    "Storico indicatore",
+                    options=list(indicator_names.keys()),
+                    format_func=lambda x: indicator_names.get(x, x),
+                    key=f"macro_select_{country}",
+                )
+                if selected_ind:
+                    hist = load_macro_history_cached(selected_ind)
+                    if len(hist) > 1:
+                        df_macro = pd.DataFrame(hist)
+                        df_macro["created_at"] = pd.to_datetime(df_macro["created_at"])
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=df_macro["created_at"], y=df_macro["value"],
+                            mode="lines+markers",
+                            name=indicator_names.get(selected_ind, selected_ind),
+                            line=dict(color="#4a9eff", width=2),
+                        ))
+                        fig.update_layout(
+                            height=280,
+                            margin=dict(t=10, b=10, l=10, r=10),
+                            xaxis_title="", yaxis_title=indicators[0]["unit"] if indicators else "",
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("Dati storici insufficienti — cresce ad ogni ciclo del bot.")
+
+        # Summary heatmap across all indicators
+        st.divider()
+        st.subheader("Heatmap indicatori")
+        if len(macro_data) >= 2:
+            df_heat = pd.DataFrame(macro_data)[["name", "value", "country"]]
+            fig = go.Figure(data=go.Bar(
+                x=df_heat["name"],
+                y=df_heat["value"],
+                marker_color=[
+                    "#00cc88" if v >= 0 else "#ff4444"
+                    for v in df_heat["value"]
+                ],
+                text=df_heat["value"].round(2),
+                textposition="outside",
+            ))
+            fig.update_layout(
+                height=320,
+                margin=dict(t=20, b=80, l=10, r=10),
+                xaxis_tickangle=-35,
+                xaxis_title="",
+                yaxis_title="Valore",
+                showlegend=False,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+
+# ===========================================================================
+# TAB 5 — NOTIZIE
 # ===========================================================================
 with tab_news:
     col_news, col_sent = st.columns([2, 1])
@@ -429,7 +545,7 @@ with tab_news:
             st.info("Nessun dato sentiment disponibile.")
 
 # ===========================================================================
-# TAB 5 — ORDINI
+# TAB 6 — ORDINI
 # ===========================================================================
 with tab_orders:
     col_sig, col_ord = st.columns([1, 1])

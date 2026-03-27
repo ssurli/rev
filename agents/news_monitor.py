@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 
 import requests
 
-from core.config import NEWSAPI_KEY
+from core.config import NEWSAPI_KEY, NEWSAPI_SOURCES
 from core.state import BotState, NewsItem
 
 logger = logging.getLogger(__name__)
@@ -25,37 +25,66 @@ logger = logging.getLogger(__name__)
 # RSS feeds — no API key required
 # -----------------------------------------------------------------------
 RSS_FEEDS = [
+    # Global finance
     "https://feeds.content.dowjones.io/public/rss/mw_topstories",        # MarketWatch
-    "https://www.ft.com/?format=rss",                                     # Financial Times
-    "https://feeds.reuters.com/reuters/businessNews",                     # Reuters business
-    "https://www.investing.com/rss/news.rss",                             # Investing.com
+    "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",                     # WSJ Markets
     "https://feeds.bbci.co.uk/news/business/rss.xml",                    # BBC Business
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html",             # CNBC Top News
+    "https://www.cnbc.com/id/10000664/device/rss/rss.html",              # CNBC Markets
+    # Yahoo Finance (aggregates Reuters, AP, Bloomberg)
+    "https://finance.yahoo.com/rss/topstories",
+    "https://finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US",
+    # Reuters (alternate endpoints)
+    "https://feeds.reuters.com/reuters/businessNews",
+    "https://feeds.reuters.com/reuters/technologyNews",
+    # Crypto
+    "https://cointelegraph.com/rss",
+    "https://decrypt.co/feed",
 ]
 
-# Keywords that signal high-impact news
+# Keywords that signal high-impact news (used only for RSS pre-filter — NewsAPI sends all)
 HIGH_IMPACT_KEYWORDS = [
-    # Monetary policy
-    "interest rate", "fed rate", "ecb rate", "rate hike", "rate cut",
-    "quantitative easing", "tapering", "inflation", "cpi", "ppi",
-    # Political / trade
+    # Monetary policy / central banks
+    "interest rate", "rate hike", "rate cut", "rate decision",
+    "federal reserve", "fed reserve", "ecb", "bce", "boj", "bank of england",
+    "powell", "lagarde", "ueda", "fomc", "quantitative", "tapering",
+    "inflation", "cpi", "pce", "ppi", "deflation", "stagflation",
+    # Macro data
+    "gdp", "unemployment", "nonfarm", "payroll", "retail sales",
+    "pmi", "ism", "housing", "consumer confidence", "recession",
+    # Political / trade / geopolitical
     "tariff", "sanction", "trade war", "embargo", "trade deal",
-    "trump", "biden", "powell", "lagarde",
-    # Crypto specific
-    "bitcoin", "ethereum", "crypto ban", "sec crypto", "btc",
-    # Market events
-    "recession", "gdp", "unemployment", "nonfarm", "earnings",
-    # CEO / corporate
-    "musk", "bezos", "cook", "pichai", "zuckerberg",
-    "acquisition", "merger", "bankruptcy", "ipo",
+    "trump", "biden", "harris", "xi jinping", "putin",
+    "china", "russia", "ukraine", "taiwan", "middle east",
+    # Crypto / digital assets
+    "bitcoin", "ethereum", "crypto", "btc", "eth", "stablecoin",
+    "sec crypto", "crypto ban", "coinbase", "binance", "etf approval",
+    # Corporate / market events
+    "earnings", "guidance", "acquisition", "merger", "bankruptcy", "ipo",
+    "layoffs", "buyback", "dividend", "split",
+    # CEOs & key figures
+    "musk", "elon", "bezos", "cook", "tim cook", "pichai", "zuckerberg",
+    "jensen huang", "nvidia", "yellen",
+    # Market stress
+    "market crash", "sell off", "rally", "all-time high", "bear market",
+    "bull market", "volatility", "vix", "yield curve", "spread",
+    # Gold / oil
+    "gold", "crude oil", "opec", "brent", "wti",
 ]
 
 NEWSAPI_QUERIES = [
-    "interest rate central bank",
-    "cryptocurrency regulation bitcoin",
-    "stock market ETF gold",
-    "tariff trade war sanctions",
-    "CEO acquisition merger bankruptcy",
+    "Federal Reserve interest rate inflation",
+    "ECB European Central Bank rate decision",
+    "cryptocurrency bitcoin ethereum regulation",
+    "stock market S&P500 earnings forecast",
+    "tariff trade war sanctions geopolitical",
+    "oil gold commodities OPEC price",
+    "GDP unemployment recession economic data",
+    "merger acquisition IPO bankruptcy corporate",
 ]
+
+# NewsAPI sources to prioritize (comma-separated for API)
+NEWSAPI_SOURCES = "reuters,bloomberg,cnbc,the-wall-street-journal,financial-times,fortune"
 
 
 def run(state: BotState) -> BotState:
@@ -77,6 +106,7 @@ def run(state: BotState) -> BotState:
                         "pageSize": 10,
                         "from": cutoff.strftime("%Y-%m-%dT%H:%M:%S"),
                         "apiKey": NEWSAPI_KEY,
+                        "sources": NEWSAPI_SOURCES,
                     },
                     timeout=10,
                 )

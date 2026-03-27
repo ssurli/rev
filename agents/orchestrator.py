@@ -18,6 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from agents import (
     execution,
     forecast,
+    macro,
     market_data,
     news_monitor,
     portfolio,
@@ -29,6 +30,7 @@ from agents import (
 from core.config import TRADING_MODE
 from core.db import (
     save_forecasts,
+    save_macro_indicators,
     save_news_items,
     save_orders,
     save_sentiment,
@@ -65,6 +67,17 @@ def _node_news(state: BotState) -> BotState:
         logger.error("news_monitor error: %s", exc)
         state["errors"].append(f"news_monitor: {exc}")
         state.setdefault("news_items", [])
+    return state
+
+
+def _node_macro(state: BotState) -> BotState:
+    try:
+        state = macro.run(state)
+        save_macro_indicators(state["cycle_id"], state.get("macro_data", []))
+    except Exception as exc:
+        logger.error("macro error: %s", exc)
+        state["errors"].append(f"macro: {exc}")
+        state.setdefault("macro_data", [])
     return state
 
 
@@ -163,6 +176,7 @@ def build_graph() -> StateGraph:
 
     g.add_node("portfolio_init",    _node_portfolio_init)
     g.add_node("news_monitor",      _node_news)
+    g.add_node("macro",             _node_macro)
     g.add_node("sentiment",         _node_sentiment)
     g.add_node("market_data",       _node_market_data)
     g.add_node("technical",         _node_technical)
@@ -174,7 +188,8 @@ def build_graph() -> StateGraph:
 
     g.add_edge(START,              "portfolio_init")
     g.add_edge("portfolio_init",   "news_monitor")
-    g.add_edge("news_monitor",     "sentiment")
+    g.add_edge("news_monitor",     "macro")
+    g.add_edge("macro",            "sentiment")
     g.add_edge("sentiment",        "market_data")
     g.add_edge("market_data",      "technical")
     g.add_edge("technical",        "forecast")
@@ -200,6 +215,7 @@ def run_cycle(mode: str = TRADING_MODE) -> BotState:
         "cycle_id": cycle_id,
         "mode": mode,
         "news_items": [],
+        "macro_data": [],
         "sentiment_scores": {},
         "asset_mentions": {},
         "market_data": {},
