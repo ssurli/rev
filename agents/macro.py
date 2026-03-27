@@ -26,15 +26,15 @@ logger = logging.getLogger(__name__)
 # FRED series to fetch (series_id → (name, unit, country))
 # ---------------------------------------------------------------------------
 FRED_SERIES: dict[str, tuple[str, str, str]] = {
-    "FEDFUNDS":     ("Fed Funds Rate",          "%",    "US"),
-    "CPIAUCSL":     ("CPI Urban (YoY)",         "%",    "US"),
-    "UNRATE":       ("Unemployment Rate",        "%",    "US"),
-    "DGS10":        ("10Y Treasury Yield",       "%",    "US"),
-    "DGS2":         ("2Y Treasury Yield",        "%",    "US"),
-    "T10Y2Y":       ("Yield Curve 10Y-2Y",       "pp",   "US"),
-    "VIXCLS":       ("VIX Volatility Index",     "pts",  "US"),
-    "UMCSENT":      ("Michigan Consumer Sent.",  "idx",  "US"),
-    "BAMLH0A0HYM2": ("US HY Credit Spread",      "pp",   "US"),
+    "FEDFUNDS":       ("Fed Funds Rate",          "%",    "US"),
+    "CPIAUCSL_PC1":   ("CPI Inflazione (YoY)",    "%",    "US"),
+    "UNRATE":         ("Unemployment Rate",        "%",    "US"),
+    "DGS10":          ("10Y Treasury Yield",       "%",    "US"),
+    "DGS2":           ("2Y Treasury Yield",        "%",    "US"),
+    "T10Y2Y":         ("Yield Curve 10Y-2Y",       "pp",   "US"),
+    "VIXCLS":         ("VIX Volatility Index",     "pts",  "US"),
+    "UMCSENT":        ("Michigan Consumer Sent.",  "idx",  "US"),
+    "BAMLH0A0HYM2":   ("US HY Credit Spread",      "pp",   "US"),
 }
 
 # ---------------------------------------------------------------------------
