@@ -73,13 +73,9 @@ HIGH_IMPACT_KEYWORDS = [
 ]
 
 NEWSAPI_QUERIES = [
-    "Federal Reserve interest rate inflation",
-    "ECB European Central Bank rate decision",
-    "cryptocurrency bitcoin ethereum regulation",
-    "stock market S&P500 earnings forecast",
-    "tariff trade war sanctions geopolitical",
-    "oil gold commodities OPEC price",
-    "GDP unemployment recession economic data",
+    "Federal Reserve ECB interest rate inflation tariff",
+    "cryptocurrency bitcoin stock market earnings",
+    "gold oil recession GDP unemployment geopolitical",
     "merger acquisition IPO bankruptcy corporate",
 ]
 
@@ -129,7 +125,7 @@ def run(state: BotState) -> BotState:
     # --- RSS feeds (parsed with stdlib xml.etree.ElementTree) ---
     for feed_url in RSS_FEEDS:
         try:
-            resp = requests.get(feed_url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+            resp = requests.get(feed_url, timeout=8, headers={"User-Agent": "Mozilla/5.0"}, verify=False)
             resp.raise_for_status()
             root = ET.fromstring(resp.content)
             ns = {"atom": "http://www.w3.org/2005/Atom"}

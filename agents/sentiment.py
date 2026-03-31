@@ -79,10 +79,14 @@ def _score_batch(headlines: list[str], asset_symbols: list[str]) -> dict[str, fl
             messages=[{"role": "user", "content": user_msg}],
         )
         raw = message.content[0].text.strip()
-        # Strip markdown code fences if present
+        if not raw:
+            return {sym: 0.0 for sym in asset_symbols}
         if raw.startswith("```"):
             raw = raw.split("```")[1].lstrip("json").strip()
         return json.loads(raw)
+    except json.JSONDecodeError:
+        logger.debug("Sentiment: JSON parse failed, skipping batch")
+        return {sym: 0.0 for sym in asset_symbols}
     except Exception as exc:
         logger.warning("Sentiment Claude call failed: %s", exc)
         return {sym: 0.0 for sym in asset_symbols}
