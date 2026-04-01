@@ -18,6 +18,17 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+# ---------------------------------------------------------------------------
+# Streamlit Cloud: leggi secrets e iniettali come env vars (sovrascrive .env)
+# ---------------------------------------------------------------------------
+try:
+    import streamlit as _st_secrets
+    for _k in ["ANTHROPIC_API_KEY", "NEWSAPI_KEY", "FRED_API_KEY", "TRADING_MODE"]:
+        if _k in _st_secrets.secrets:
+            os.environ[_k] = _st_secrets.secrets[_k]
+except Exception:
+    pass  # locale: usa .env normale
+
 os.environ.setdefault("TRADING_MODE", "paper")
 
 import time
@@ -54,6 +65,24 @@ st.set_page_config(
 )
 
 init_db()
+
+# ---------------------------------------------------------------------------
+# Password protection (solo se DASHBOARD_PASSWORD è configurata nei secrets)
+# ---------------------------------------------------------------------------
+_pwd_required = os.environ.get("DASHBOARD_PASSWORD", "")
+if _pwd_required:
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if not st.session_state.authenticated:
+        st.title("🔐 Investment Bot — Accesso")
+        pwd = st.text_input("Password", type="password")
+        if st.button("Accedi"):
+            if pwd == _pwd_required:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Password errata")
+        st.stop()
 
 # ---------------------------------------------------------------------------
 # Sidebar
