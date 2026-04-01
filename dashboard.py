@@ -150,6 +150,15 @@ def load_market_data(symbols: list[str]) -> dict[str, dict]:
     if not symbols:
         return result
     try:
+        # Fetch EUR/USD for conversion
+        eur_usd = 1.10
+        try:
+            fx = yf.download("EURUSD=X", period="1d", interval="1h", progress=False, auto_adjust=True)
+            if not fx.empty:
+                eur_usd = float(fx["Close"].iloc[-1])
+        except Exception:
+            pass
+
         data = yf.download(symbols, period="5d", interval="1h", progress=False, auto_adjust=True)
         if data.empty:
             return result
@@ -165,11 +174,15 @@ def load_market_data(symbols: list[str]) -> dict[str, dict]:
                 current = float(series.iloc[-1])
                 prev = float(series.iloc[-2]) if len(series) > 1 else current
                 prev_24 = float(series.iloc[max(0, len(series) - 25)])
+                price_eur = current / eur_usd
                 result[sym] = {
                     "price": current,
+                    "price_eur": price_eur,
+                    "eur_usd": eur_usd,
                     "change_1h_pct": (current - prev) / prev * 100 if prev else 0,
                     "change_24h_pct": (current - prev_24) / prev_24 * 100 if prev_24 else 0,
                     "history": series,
+                    "history_eur": series / eur_usd,
                 }
             except Exception:
                 continue
@@ -336,20 +349,23 @@ with tab_markets:
         for i, (sym, d) in enumerate(market.items()):
             with cols[i % len(cols)]:
                 delta_color = "normal"
+                eur_usd = d.get("eur_usd", 1.10)
+                price_eur = d.get("price_eur", d["price"] / eur_usd)
                 st.metric(
                     label=sym,
-                    value=f"${d['price']:,.2f}" if "USD" in sym or "=F" in sym else f"${d['price']:,.2f}",
+                    value=f"€{price_eur:,.2f}",
                     delta=f"{d['change_24h_pct']:+.2f}% 24h",
                     delta_color="normal",
                 )
+                st.caption(f"${d['price']:,.2f} · EUR/USD {eur_usd:.4f}")
 
         st.divider()
 
         # Grafico prezzi per asset selezionato
         asset_choice = st.selectbox("Seleziona asset per il grafico", options=list(market.keys()))
         if asset_choice and asset_choice in market:
-            series = market[asset_choice]["history"]
-            df_price = pd.DataFrame({"time": series.index, "price": series.values})
+            series_eur = market[asset_choice].get("history_eur", market[asset_choice]["history"])
+            df_price = pd.DataFrame({"time": series_eur.index, "price": series_eur.values})
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=df_price["time"], y=df_price["price"],
@@ -357,10 +373,10 @@ with tab_markets:
                 line=dict(color="#f0a500", width=2),
             ))
             fig.update_layout(
-                title=f"{asset_choice} — ultimi 5 giorni (1h)",
+                title=f"{asset_choice} — ultimi 5 giorni (1h) — prezzi in €",
                 height=380,
                 margin=dict(t=40, b=20, l=20, r=20),
-                xaxis_title="", yaxis_title="Prezzo",
+                xaxis_title="", yaxis_title="Prezzo €",
             )
             st.plotly_chart(fig, use_container_width=True)
 
