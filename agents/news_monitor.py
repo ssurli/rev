@@ -10,6 +10,9 @@ Monitors political/economic news that typically cause market fluctuations:
 from __future__ import annotations
 
 import logging
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from datetime import datetime, timedelta, timezone
 
 import xml.etree.ElementTree as ET
