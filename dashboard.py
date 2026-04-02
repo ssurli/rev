@@ -18,6 +18,17 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+# ---------------------------------------------------------------------------
+# Streamlit Cloud: leggi secrets e iniettali come env vars (sovrascrive .env)
+# ---------------------------------------------------------------------------
+try:
+    import streamlit as _st_secrets
+    for _k in ["ANTHROPIC_API_KEY", "NEWSAPI_KEY", "FRED_API_KEY", "TRADING_MODE"]:
+        if _k in _st_secrets.secrets:
+            os.environ[_k] = _st_secrets.secrets[_k]
+except Exception:
+    pass  # locale: usa .env normale
+
 os.environ.setdefault("TRADING_MODE", "paper")
 
 import time
@@ -29,7 +40,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-from core.config import ASSETS, TRADING_MODE
+from core.config import ASSETS, TRADING_MODE, STOP_LOSS_PCT, TAKE_PROFIT_PCT, MAX_POSITION_PCT, MIN_CASH_PCT, MAX_TRADE_EUR
 from core.db import (
     get_latest_forecasts,
     get_latest_macro,
@@ -56,6 +67,24 @@ st.set_page_config(
 init_db()
 
 # ---------------------------------------------------------------------------
+# Password protection (solo se DASHBOARD_PASSWORD è configurata nei secrets)
+# ---------------------------------------------------------------------------
+_pwd_required = os.environ.get("DASHBOARD_PASSWORD", "")
+if _pwd_required:
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if not st.session_state.authenticated:
+        st.title("🔐 Investment Bot — Accesso")
+        pwd = st.text_input("Password", type="password")
+        if st.button("Accedi"):
+            if pwd == _pwd_required:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Password errata")
+        st.stop()
+
+# ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
 with st.sidebar:
@@ -76,6 +105,35 @@ with st.sidebar:
         default=ASSETS,
     )
     st.divider()
+
+    # --- Pannello SL/TP ---
+    with st.expander("⚙️ Regole Stop Loss / Take Profit", expanded=False):
+        sl = st.slider("Stop Loss %", min_value=-30, max_value=-1, value=int(STOP_LOSS_PCT), step=1)
+        tp = st.slider("Take Profit %", min_value=5, max_value=100, value=int(TAKE_PROFIT_PCT), step=5)
+        max_pos = st.slider("Max posizione %", min_value=5, max_value=50, value=int(MAX_POSITION_PCT), step=5)
+        min_cash = st.slider("Min cash %", min_value=5, max_value=40, value=int(MIN_CASH_PCT), step=5)
+        max_trade = st.number_input("Max trade €", min_value=5, max_value=500, value=int(MAX_TRADE_EUR), step=5)
+        st.caption("ℹ️ Per rendere permanenti le modifiche, aggiorna il `.env`")
+        st.code(
+            f"STOP_LOSS_PCT={sl}\n"
+            f"TAKE_PROFIT_PCT={tp}\n"
+            f"MAX_POSITION_PCT={max_pos}\n"
+            f"MIN_CASH_PCT={min_cash}\n"
+            f"MAX_TRADE_EUR={max_trade}",
+            language="ini",
+        )
+
+        # Visual summary
+        st.markdown("**Strategia attiva:**")
+        risk_color = "🔴" if abs(sl) > 20 else "🟡"
+        reward_color = "🟢" if tp >= 30 else "🟡"
+        st.markdown(
+            f"{risk_color} SL: `{sl}%`  •  "
+            f"{reward_color} TP: `+{tp}%`  •  "
+            f"R/R: `1:{tp/abs(sl):.1f}`"
+        )
+
+    st.divider()
     st.caption(f"Ultimo aggiornamento: {datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC")
 
 if auto_refresh:
@@ -92,6 +150,15 @@ def load_market_data(symbols: list[str]) -> dict[str, dict]:
     if not symbols:
         return result
     try:
+        # Fetch EUR/USD for conversion
+        eur_usd = 1.10
+        try:
+            fx = yf.download("EURUSD=X", period="1d", interval="1h", progress=False, auto_adjust=True)
+            if not fx.empty:
+                eur_usd = float(fx["Close"].iloc[-1])
+        except Exception:
+            pass
+
         data = yf.download(symbols, period="5d", interval="1h", progress=False, auto_adjust=True)
         if data.empty:
             return result
@@ -107,11 +174,15 @@ def load_market_data(symbols: list[str]) -> dict[str, dict]:
                 current = float(series.iloc[-1])
                 prev = float(series.iloc[-2]) if len(series) > 1 else current
                 prev_24 = float(series.iloc[max(0, len(series) - 25)])
+                price_eur = current / eur_usd
                 result[sym] = {
                     "price": current,
+                    "price_eur": price_eur,
+                    "eur_usd": eur_usd,
                     "change_1h_pct": (current - prev) / prev * 100 if prev else 0,
                     "change_24h_pct": (current - prev_24) / prev_24 * 100 if prev_24 else 0,
                     "history": series,
+                    "history_eur": series / eur_usd,
                 }
             except Exception:
                 continue
@@ -181,8 +252,8 @@ macro_data = load_macro_cached()
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_portfolio, tab_markets, tab_forecast, tab_macro, tab_news, tab_orders, tab_chat = st.tabs(
-    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "🏦 Macro", "📰 Notizie", "📋 Ordini", "💬 Analista AI"]
+tab_portfolio, tab_markets, tab_forecast, tab_macro, tab_news, tab_orders, tab_chat, tab_guide = st.tabs(
+    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "🏦 Macro", "📰 Notizie", "📋 Ordini", "💬 Analista AI", "📚 Guida"]
 )
 
 # ===========================================================================
@@ -278,20 +349,23 @@ with tab_markets:
         for i, (sym, d) in enumerate(market.items()):
             with cols[i % len(cols)]:
                 delta_color = "normal"
+                eur_usd = d.get("eur_usd", 1.10)
+                price_eur = d.get("price_eur", d["price"] / eur_usd)
                 st.metric(
                     label=sym,
-                    value=f"${d['price']:,.2f}" if "USD" in sym or "=F" in sym else f"${d['price']:,.2f}",
+                    value=f"€{price_eur:,.2f}",
                     delta=f"{d['change_24h_pct']:+.2f}% 24h",
                     delta_color="normal",
                 )
+                st.caption(f"${d['price']:,.2f} · EUR/USD {eur_usd:.4f}")
 
         st.divider()
 
         # Grafico prezzi per asset selezionato
         asset_choice = st.selectbox("Seleziona asset per il grafico", options=list(market.keys()))
         if asset_choice and asset_choice in market:
-            series = market[asset_choice]["history"]
-            df_price = pd.DataFrame({"time": series.index, "price": series.values})
+            series_eur = market[asset_choice].get("history_eur", market[asset_choice]["history"])
+            df_price = pd.DataFrame({"time": series_eur.index, "price": series_eur.values})
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=df_price["time"], y=df_price["price"],
@@ -299,10 +373,10 @@ with tab_markets:
                 line=dict(color="#f0a500", width=2),
             ))
             fig.update_layout(
-                title=f"{asset_choice} — ultimi 5 giorni (1h)",
+                title=f"{asset_choice} — ultimi 5 giorni (1h) — prezzi in €",
                 height=380,
                 margin=dict(t=40, b=20, l=20, r=20),
-                xaxis_title="", yaxis_title="Prezzo",
+                xaxis_title="", yaxis_title="Prezzo €",
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -691,3 +765,149 @@ with tab_chat:
         if st.button("🗑️ Cancella conversazione", key="clear_chat"):
             st.session_state.chat_history = []
             st.rerun()
+
+# ===========================================================================
+# TAB 8 — GUIDA
+# ===========================================================================
+with tab_guide:
+    st.title("📚 Guida all'Investimento")
+    st.caption("Come funziona il bot e come investire in modo consapevole.")
+
+    # -----------------------------------------------------------------------
+    g1, g2 = st.columns([1, 1])
+
+    with g1:
+        st.subheader("🤖 Come funziona il bot")
+        st.markdown("""
+Ogni **30 minuti** il bot esegue un ciclo completo:
+
+1. **📰 Notizie** — raccoglie da Reuters, CNBC, Yahoo Finance, WSJ
+2. **🏦 Macro** — legge Fed, BCE, World Bank (tassi, CPI, VIX, PIL)
+3. **🧠 Sentiment** — Claude analizza le notizie e assegna un punteggio [-1,+1] per ogni asset
+4. **📊 Mercato** — scarica prezzi in tempo reale (yfinance)
+5. **📐 Tecnico** — calcola RSI, medie mobili, MACD, Bollinger Bands
+6. **🔮 Forecast** — Claude combina tutto in una previsione BULLISH/BEARISH/NEUTRAL
+7. **⚡ Strategia** — genera segnali BUY/SELL/TRIM/HOLD
+8. **🛡️ Risk Manager** — valida i segnali contro le regole di rischio
+9. **✅ Esecuzione** — piazza gli ordini (simulati in paper mode)
+        """)
+
+        st.subheader("📊 Indicatori tecnici usati")
+        st.markdown("""
+| Indicatore | Cosa misura | Segnale |
+|-----------|------------|---------|
+| **RSI (14)** | Forza del trend | >70 = overbought, <30 = oversold |
+| **MA20/MA50** | Medie mobili | Golden cross = rialzo, Death cross = ribasso |
+| **MACD** | Momentum | Histogram positivo = rialzo |
+| **Bollinger Bands** | Volatilità | Vicino al lower = rimbalzo possibile |
+| **Momentum 5d** | Variazione % | Positivo = trend in corso |
+        """)
+
+    with g2:
+        st.subheader("🛡️ Regole Stop Loss / Take Profit")
+
+        col_sl, col_tp = st.columns(2)
+        with col_sl:
+            st.error(f"**Stop Loss: {STOP_LOSS_PCT}%**")
+            st.markdown(f"""
+Vendi automaticamente se la posizione perde il **{abs(STOP_LOSS_PCT)}%**.
+
+**Esempio:** Compri GLD a €100
+→ Se scende a **€{100*(1+STOP_LOSS_PCT/100):.0f}** → SELL automatico
+            """)
+
+        with col_tp:
+            st.success(f"**Take Profit: +{TAKE_PROFIT_PCT}%**")
+            st.markdown(f"""
+Vendi (parzialmente) se la posizione guadagna il **{TAKE_PROFIT_PCT}%**.
+
+**Esempio:** Compri GLD a €100
+→ Se sale a **€{100*(1+TAKE_PROFIT_PCT/100):.0f}** → TRIM automatico
+            """)
+
+        st.divider()
+        st.subheader("⚙️ Altre regole di rischio")
+        st.markdown(f"""
+| Regola | Valore | Effetto |
+|--------|--------|---------|
+| **Max trade** | €{MAX_TRADE_EUR} | Ogni ordine max €{MAX_TRADE_EUR} |
+| **Max posizione** | {MAX_POSITION_PCT}% | Nessun asset >20% del portfolio |
+| **Min cash** | {MIN_CASH_PCT}% | Mantieni sempre liquidità |
+| **Max crypto** | 15% | Limita esposizione crypto |
+| **Risk score** | 0-100 | Se >60 (Alto) blocca nuovi BUY |
+
+**Come si calcola il Risk Score:**
+- Cash <{MIN_CASH_PCT}% → +25 punti
+- Crypto >15% → +20 punti
+- Posizione >20% → +15 punti per ognuna
+- <2 tipi di asset → +10 punti
+        """)
+
+    st.divider()
+
+    # -----------------------------------------------------------------------
+    st.subheader("💡 Principi base per investire")
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.info("""
+**🎯 Diversifica**
+
+Non mettere tutto in un solo asset.
+Il bot gestisce automaticamente:
+- Crypto (max 15%)
+- ETF (ampia base)
+- Stock (settori diversi)
+- Commodities (oro, petrolio)
+- Bond (TLT)
+        """)
+    with c2:
+        st.warning("""
+**⚠️ Gestisci il rischio**
+
+Prima di investire chiediti:
+- Posso permettermi di perdere questa somma?
+- Ho abbastanza liquidità?
+- Il mercato è in fase risk-on o risk-off?
+
+Il **VIX >30** = alta volatilità → riduci le posizioni
+        """)
+    with c3:
+        st.success("""
+**📈 Pensa al lungo periodo**
+
+Il bot opera su orizzonti:
+- **Short** (giorni): segnali tecnici
+- **Medium** (settimane): trend + macro
+
+I mercati scendono e salgono.
+Il dollar-cost averaging (acquisti graduali) riduce il rischio di timing sbagliato.
+        """)
+
+    st.divider()
+
+    # -----------------------------------------------------------------------
+    st.subheader("🔑 Interpretare i segnali")
+    st.markdown("""
+| Segnale | Condizione | Significato |
+|---------|-----------|-------------|
+| 🟢 **BUY** | Forecast >+0.35, conf >50%, BULLISH | Il bot vede opportunità di acquisto |
+| 🔴 **SELL** | Forecast <-0.35, conf >50%, BEARISH + posizione aperta | Uscita dal trade |
+| ✂️ **TRIM** | P&L ≥+30% o posizione >20% | Presa parziale di profitto |
+| 🛑 **STOP LOSS** | P&L ≤-15% | Uscita automatica per limitare le perdite |
+| ⚪ **HOLD** | Tutto il resto | Mantieni, nessuna azione necessaria |
+
+**Forecast Score:**
+- `+0.5` a `+1.0` = forte segnale rialzista
+- `+0.1` a `+0.5` = segnale moderato
+- `-0.1` a `+0.1` = neutro / incerto
+- `-0.5` a `-1.0` = forte segnale ribassista
+
+**Confidence:**
+- `>70%` = alta certezza del segnale
+- `50-70%` = buona certezza
+- `<50%` = segnale debole, non eseguito
+    """)
+
+    st.divider()
+    st.caption("⚠️ **Disclaimer:** Questo bot è a scopo educativo. Non costituisce consulenza finanziaria. Investi solo capitale che puoi permetterti di perdere.")
