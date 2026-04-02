@@ -344,56 +344,208 @@ with tab_markets:
     if not market:
         st.info("Nessun dato di mercato. Attendi il prossimo ciclo o clicca Aggiorna.")
     else:
-        # KPI cards per asset
-        cols = st.columns(min(len(market), 5))
-        for i, (sym, d) in enumerate(market.items()):
-            with cols[i % len(cols)]:
-                delta_color = "normal"
-                eur_usd = d.get("eur_usd", 1.10)
-                price_eur = d.get("price_eur", d["price"] / eur_usd)
-                st.metric(
-                    label=sym,
-                    value=f"€{price_eur:,.2f}",
-                    delta=f"{d['change_24h_pct']:+.2f}% 24h",
-                    delta_color="normal",
-                )
-                st.caption(f"${d['price']:,.2f} · EUR/USD {eur_usd:.4f}")
+        # -----------------------------------------------------------------
+        # Asset category mapping
+        # -----------------------------------------------------------------
+        _CATEGORIES: dict[str, str] = {
+            # Crypto
+            "BTC-USD": "🪙 Crypto", "ETH-USD": "🪙 Crypto", "BNB-USD": "🪙 Crypto",
+            "SOL-USD": "🪙 Crypto", "XRP-USD": "🪙 Crypto", "ADA-USD": "🪙 Crypto",
+            "DOGE-USD": "🪙 Crypto", "AVAX-USD": "🪙 Crypto",
+            # ETF
+            "VOO": "📦 ETF", "QQQ": "📦 ETF", "SPY": "📦 ETF", "IVV": "📦 ETF",
+            "VTI": "📦 ETF", "TLT": "📦 ETF", "IEF": "📦 ETF", "SHY": "📦 ETF",
+            "HYG": "📦 ETF", "ARKK": "📦 ETF", "EEM": "📦 ETF",
+            "VWCE.DE": "📦 ETF", "CSPX.L": "📦 ETF", "IWDA.L": "📦 ETF",
+            "EXS1.DE": "📦 ETF", "MEUD.PA": "📦 ETF",
+            # Commodities
+            "GLD": "🥇 Commodity", "SLV": "🥇 Commodity", "GDX": "🥇 Commodity",
+            "USO": "🥇 Commodity", "CL=F": "🥇 Commodity", "GC=F": "🥇 Commodity",
+            "SI=F": "🥇 Commodity", "NG=F": "🥇 Commodity",
+            # Forex
+            "EURUSD=X": "💱 Forex", "GBPUSD=X": "💱 Forex",
+            "USDJPY=X": "💱 Forex", "USDCNY=X": "💱 Forex",
+            # Indices
+            "^GSPC": "📈 Indice", "^DJI": "📈 Indice", "^IXIC": "📈 Indice",
+            "^FTSE": "📈 Indice", "^DAX": "📈 Indice", "^GDAXI": "📈 Indice",
+            "^FCHI": "📈 Indice", "^STOXX50E": "📈 Indice",
+            "^N225": "📈 Indice", "^HSI": "📈 Indice",
+        }
+        def _cat(sym: str) -> str:
+            return _CATEGORIES.get(sym, "📊 Stock")
+
+        # Build lookup dicts for forecast & sentiment
+        _fc_map = {f["symbol"]: f for f in forecasts_data} if forecasts_data else {}
+        _sent_map = {s["symbol"]: s["score"] for s in sentiment} if sentiment else {}
+
+        # -----------------------------------------------------------------
+        # Summary table — all assets at a glance
+        # -----------------------------------------------------------------
+        st.subheader("Panoramica mercati")
+        rows = []
+        for sym, d in market.items():
+            fc = _fc_map.get(sym, {})
+            sent_score = _sent_map.get(sym, None)
+            direction = fc.get("direction", "—")
+            dir_emoji = "🟢" if direction == "BULLISH" else ("🔴" if direction == "BEARISH" else "⚪")
+            chg24 = d["change_24h_pct"]
+            chg1h = d["change_1h_pct"]
+            rows.append({
+                "Asset": sym,
+                "Categoria": _cat(sym),
+                "Prezzo €": d.get("price_eur", d["price"]),
+                "1h %": chg1h,
+                "24h %": chg24,
+                "Sentiment": sent_score if sent_score is not None else float("nan"),
+                "Forecast": f"{dir_emoji} {direction}",
+                "Score": fc.get("forecast_score", float("nan")),
+            })
+        df_summary = pd.DataFrame(rows)
+
+        # Style helper
+        def _color_pct(val):
+            if pd.isna(val):
+                return ""
+            color = "#00cc88" if val > 0 else ("#ff4444" if val < 0 else "#aaaaaa")
+            return f"color: {color}; font-weight: bold"
+
+        def _color_score(val):
+            if pd.isna(val):
+                return ""
+            color = "#00cc88" if val > 0.1 else ("#ff4444" if val < -0.1 else "#aaaaaa")
+            return f"color: {color}"
+
+        styled = (
+            df_summary.style
+            .format({
+                "Prezzo €": lambda x: f"€{x:,.2f}",
+                "1h %": lambda x: f"{x:+.2f}%" if not pd.isna(x) else "—",
+                "24h %": lambda x: f"{x:+.2f}%" if not pd.isna(x) else "—",
+                "Sentiment": lambda x: f"{x:+.2f}" if not pd.isna(x) else "—",
+                "Score": lambda x: f"{x:+.3f}" if not pd.isna(x) else "—",
+            })
+            .applymap(_color_pct, subset=["1h %", "24h %"])
+            .applymap(_color_score, subset=["Sentiment", "Score"])
+        )
+        st.dataframe(styled, use_container_width=True, hide_index=True, height=min(40 * len(rows) + 38, 520))
 
         st.divider()
 
-        # Grafico prezzi per asset selezionato
-        asset_choice = st.selectbox("Seleziona asset per il grafico", options=list(market.keys()))
+        # -----------------------------------------------------------------
+        # Group cards by category
+        # -----------------------------------------------------------------
+        by_cat: dict[str, list[str]] = {}
+        for sym in market:
+            by_cat.setdefault(_cat(sym), []).append(sym)
+
+        for cat_name, cat_syms in by_cat.items():
+            st.markdown(f"#### {cat_name}")
+            cards_per_row = 5
+            for chunk_start in range(0, len(cat_syms), cards_per_row):
+                chunk = cat_syms[chunk_start:chunk_start + cards_per_row]
+                cols = st.columns(len(chunk))
+                for col, sym in zip(cols, chunk):
+                    d = market[sym]
+                    fc = _fc_map.get(sym, {})
+                    price_eur = d.get("price_eur", d["price"])
+                    chg24 = d["change_24h_pct"]
+                    direction = fc.get("direction", "")
+                    dir_emoji = " 🟢" if direction == "BULLISH" else (" 🔴" if direction == "BEARISH" else "")
+                    sent = _sent_map.get(sym)
+                    sent_str = f"  |  Sent: {sent:+.2f}" if sent is not None else ""
+                    col.metric(
+                        label=f"{sym}{dir_emoji}",
+                        value=f"€{price_eur:,.2f}",
+                        delta=f"{chg24:+.2f}% 24h",
+                        delta_color="normal",
+                        help=f"1h: {d['change_1h_pct']:+.2f}%{sent_str}",
+                    )
+
+        st.divider()
+
+        # -----------------------------------------------------------------
+        # Grafico dettaglio per asset selezionato
+        # -----------------------------------------------------------------
+        st.subheader("Grafico dettaglio")
+        col_chart_sel, col_chart_info = st.columns([3, 1])
+        with col_chart_sel:
+            asset_choice = st.selectbox("Seleziona asset", options=list(market.keys()), key="market_asset_select")
+        with col_chart_info:
+            if asset_choice and asset_choice in market:
+                d_sel = market[asset_choice]
+                fc_sel = _fc_map.get(asset_choice, {})
+                st.metric("Prezzo", f"€{d_sel.get('price_eur', d_sel['price']):,.2f}",
+                          f"{d_sel['change_24h_pct']:+.2f}% 24h")
+                if fc_sel:
+                    dir_s = fc_sel.get("direction", "—")
+                    dir_e = "🟢" if dir_s == "BULLISH" else ("🔴" if dir_s == "BEARISH" else "⚪")
+                    st.caption(f"{dir_e} {dir_s} · conf {fc_sel.get('confidence', 0):.0%}")
+
         if asset_choice and asset_choice in market:
             series_eur = market[asset_choice].get("history_eur", market[asset_choice]["history"])
             df_price = pd.DataFrame({"time": series_eur.index, "price": series_eur.values})
+            # Color line based on overall trend
+            line_color = "#00cc88" if df_price["price"].iloc[-1] >= df_price["price"].iloc[0] else "#ff4444"
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=df_price["time"], y=df_price["price"],
                 mode="lines", name=asset_choice,
-                line=dict(color="#f0a500", width=2),
+                line=dict(color=line_color, width=2),
+                fill="tozeroy",
+                fillcolor=line_color.replace(")", ", 0.08)").replace("rgb", "rgba") if "rgb" in line_color else (
+                    "rgba(0,204,136,0.08)" if line_color == "#00cc88" else "rgba(255,68,68,0.08)"
+                ),
             ))
+            # Add 24h moving average
+            if len(df_price) >= 24:
+                df_price["ma24"] = df_price["price"].rolling(24).mean()
+                fig.add_trace(go.Scatter(
+                    x=df_price["time"], y=df_price["ma24"],
+                    mode="lines", name="MA 24h",
+                    line=dict(color="#888888", width=1.2, dash="dot"),
+                ))
+            fc_sel = _fc_map.get(asset_choice, {})
+            reasoning = fc_sel.get("reasoning", "")
+            title_suffix = f" · {fc_sel.get('direction', '')} {fc_sel.get('forecast_score', ''):+.2f}" if fc_sel else ""
             fig.update_layout(
-                title=f"{asset_choice} — ultimi 5 giorni (1h) — prezzi in €",
+                title=f"{asset_choice} — 5 giorni (1h) — €{title_suffix}",
                 height=380,
                 margin=dict(t=40, b=20, l=20, r=20),
                 xaxis_title="", yaxis_title="Prezzo €",
+                legend=dict(orientation="h", y=1.05),
             )
             st.plotly_chart(fig, use_container_width=True)
+            if reasoning:
+                st.caption(f"💬 Analisi bot: {reasoning}")
 
-        # Sentiment bar chart
-        if sentiment:
-            st.subheader("Sentiment attuale per asset")
-            df_sent = pd.DataFrame(sentiment)[["symbol", "score"]]
-            df_sent["colore"] = df_sent["score"].apply(lambda x: "Positivo" if x > 0 else ("Negativo" if x < 0 else "Neutro"))
-            fig = px.bar(
-                df_sent, x="symbol", y="score", color="colore",
-                color_discrete_map={"Positivo": "#00cc88", "Negativo": "#ff4444", "Neutro": "#aaaaaa"},
-                range_y=[-1, 1],
-                labels={"symbol": "Asset", "score": "Sentiment Score"},
+        # -----------------------------------------------------------------
+        # Sentiment & forecast combined bar chart
+        # -----------------------------------------------------------------
+        if sentiment or forecasts_data:
+            st.subheader("Sentiment vs Forecast score")
+            all_syms = list({s["symbol"] for s in (sentiment or [])} |
+                            {f["symbol"] for f in (forecasts_data or [])})
+            sent_scores = [_sent_map.get(s, 0) for s in all_syms]
+            fc_scores = [_fc_map.get(s, {}).get("forecast_score", 0) for s in all_syms]
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                name="Sentiment", x=all_syms, y=sent_scores,
+                marker_color=["#00cc88" if v > 0 else "#ff4444" for v in sent_scores],
+                opacity=0.7,
+            ))
+            fig.add_trace(go.Bar(
+                name="Forecast", x=all_syms, y=fc_scores,
+                marker_color=["#4a9eff" if v > 0 else "#ff8800" for v in fc_scores],
+                opacity=0.7,
+            ))
+            fig.add_hline(y=0.35, line_dash="dot", line_color="green", annotation_text="BUY")
+            fig.add_hline(y=-0.35, line_dash="dot", line_color="red", annotation_text="SELL")
+            fig.update_layout(
+                barmode="group", height=300,
+                margin=dict(t=20, b=20, l=10, r=10),
+                yaxis=dict(range=[-1, 1]),
+                legend=dict(orientation="h", y=1.1),
             )
-            fig.add_hline(y=0.4, line_dash="dot", line_color="green", annotation_text="BUY soglia")
-            fig.add_hline(y=-0.4, line_dash="dot", line_color="red", annotation_text="SELL soglia")
-            fig.update_layout(height=280, margin=dict(t=20, b=20, l=20, r=20), showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
 
 # ===========================================================================
