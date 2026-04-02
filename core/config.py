@@ -86,10 +86,32 @@ ALLOWED_SYMBOLS: set[str] = {
     "JNJ", "PFE", "ABBV", "UNH",
     # Stock — Energy
     "XOM", "CVX", "BP",
-    # Stock — International
-    "BABA", "TSM", "ASML", "SAP", "NVO",
-    # Indices (Yahoo Finance tickers)
-    "^GSPC", "^DJI", "^IXIC", "^FTSE", "^DAX", "^N225", "^HSI",
+    # Stock — International (Asia)
+    "BABA", "TSM", "NVO",
+    # Stock — Europa (ticker Yahoo Finance, suffisso borsa)
+    "ASML", "SAP",                              # già presenti
+    "MC.PA",   # LVMH (Parigi)
+    "OR.PA",   # L'Oréal (Parigi)
+    "SIE.DE",  # Siemens (Francoforte)
+    "ALV.DE",  # Allianz (Francoforte)
+    "BAS.DE",  # BASF (Francoforte)
+    "BMW.DE",  # BMW (Francoforte)
+    "DTE.DE",  # Deutsche Telekom
+    "ENEL.MI", # Enel (Milano)
+    "ENI.MI",  # ENI (Milano)
+    "ISP.MI",  # Intesa Sanpaolo (Milano)
+    "UCG.MI",  # UniCredit (Milano)
+    "STM.MI",  # STMicroelectronics (Milano)
+    # ETF Europa
+    "VWCE.DE", # Vanguard FTSE All-World (Xetra)
+    "CSPX.L",  # iShares S&P500 (Londra)
+    "IWDA.L",  # iShares MSCI World (Londra)
+    "EXS1.DE", # iShares DAX (Xetra)
+    "MEUD.PA", # Amundi STOXX Europe 600
+    # Indices
+    "^GSPC", "^DJI", "^IXIC",                  # US
+    "^FTSE", "^DAX", "^FCHI", "^STOXX50E",     # Europa
+    "^N225", "^HSI", "^AXJO",                  # Asia/Pacific
 }
 
 # ---------------------------------------------------------------------------
