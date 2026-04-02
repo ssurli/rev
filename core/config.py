@@ -110,7 +110,7 @@ ALLOWED_SYMBOLS: set[str] = {
     "MEUD.PA", # Amundi STOXX Europe 600
     # Indices
     "^GSPC", "^DJI", "^IXIC",                  # US
-    "^FTSE", "^DAX", "^FCHI", "^STOXX50E",     # Europa
+    "^FTSE", "^DAX", "^GDAXI", "^FCHI", "^STOXX50E",  # Europa
     "^N225", "^HSI", "^AXJO",                  # Asia/Pacific
 }
 

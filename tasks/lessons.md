@@ -15,3 +15,17 @@
 ### Accesso repo GitHub
 - **Pattern**: il tool MCP GitHub è limitato ai repo configurati per la sessione (`ssurli/ig`)
 - **Regola**: se un file è in un repo non configurato, usare WebFetch per recuperarlo direttamente da raw.githubusercontent.com prima di dichiararlo inaccessibile
+
+### Forecast fallback tecnico-only
+- **Pattern**: con `sentiment=0` e threshold `0.20`, tutti i forecast erano NEUTRAL — tech_score tipico ~0.15 non supera la soglia
+- **Regola**: in modalità tecnico-only (no Claude), abbassare la soglia a `0.10` e pesare tech al 70% (sentiment al 30%)
+- **Regola**: base confidence minima `0.30` anche per segnali deboli (evita confidence=0 che blocca strategy)
+
+### SentimentAgent — notizie macro scartate
+- **Pattern**: filtro keyword per asset scartava notizie macro ("Fed raises rates", "tariff war") che impattano tutti gli asset ma non li menzionano esplicitamente
+- **Regola**: inviare TUTTE le headline a Claude per scoring sentiment; usare il keyword map solo per il campo `asset_mentions` (display in dashboard)
+
+### Anthropic API — crediti "Credit grant" vs acquisto reale
+- **Pattern**: i crediti "Credit grant" (omaggio) non funzionano per chiamate API dirette via SDK
+- **Regola**: acquistare crediti reali tramite "Buy credits" su `console.anthropic.com/settings/billing` (non il "Credit grant" gratuito)
+- **Regola**: il bot funziona comunque in modalità tecnico-only senza API key Anthropic
