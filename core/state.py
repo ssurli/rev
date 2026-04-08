@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypedDict
 
+from typing import Optional
+
+from typing_extensions import TypedDict
+
 
 class NewsItem(TypedDict):
     title: str
@@ -78,17 +82,14 @@ class PortfolioSnapshot(TypedDict):
     risk_label: str
     allocations: dict[str, float]
 
-
-class Order(TypedDict):
-    order_id: str
+class Order(TypedDict, total=False):
     symbol: str
-    action: str
+    action: str          # "BUY" | "SELL" | "TRIM"
     amount_eur: float
-    price_eur: float
-    status: str
-    mode: str
-    timestamp: str
-
+    status: str          # "filled" | "simulated" | "error" | "watch_only" | "skipped"
+    order_id: str
+    broker: str          # "revolut_x" | "alpaca" | "none"
+    error: Optional[str] # messaggio errore se status=="error"
 
 class MacroIndicator(TypedDict):
     indicator_id: str   # e.g. FEDFUNDS, CPIAUCSL, ECB_MRO
