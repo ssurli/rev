@@ -133,8 +133,12 @@ ASSETS: list[str] = [
 # EUR/USD exchange rate (fallback if live fetch fails)
 EUR_USD_FALLBACK: float = 1.08
 
-# Cycle
-CYCLE_INTERVAL_MINUTES: int = _int("CYCLE_INTERVAL_MINUTES", 30)
+# Swing cycle (main)
+CYCLE_INTERVAL_MINUTES: int = _int("CYCLE_INTERVAL_MINUTES", 60)
+
+# Intraday / day-trading cycle
+INTRADAY_CYCLE_MINUTES: int = _int("INTRADAY_CYCLE_MINUTES", 5)
+DAY_TRADING_ENABLED:   bool = _bool("DAY_TRADING_ENABLED", False)
 
 # DB
 DB_PATH: Path = Path(os.getenv("DB_PATH", "./data/bot.sqlite"))

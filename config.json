@@ -23,5 +23,37 @@
     "top_movers_count": 5,
     "max_news_items": 5,
     "history_days_default": 30
+  },
+
+  "day_trading": {
+    "enabled": false,
+    "cycle_minutes": 5,
+
+    "symbols": [],
+
+    "score_threshold": 0.40,
+    "rsi_overbought": 65,
+    "rsi_oversold": 35,
+
+    "stop_loss_atr_multiplier": 1.5,
+    "take_profit_atr_multiplier": 2.5,
+
+    "position_size_pct": 2.0,
+    "max_position_eur": 100.0,
+    "max_concurrent_positions": 3,
+
+    "max_daily_trades": 10,
+    "max_daily_loss_pct": -2.0,
+
+    "cooldown_after_stop_minutes": 30,
+
+    "market_hours": {
+      "stocks": {
+        "open": "09:30",
+        "close": "16:00",
+        "timezone": "America/New_York"
+      },
+      "crypto": "24/7"
+    }
   }
 }
