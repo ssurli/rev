@@ -424,8 +424,8 @@ with tab_markets:
                 "Sentiment": lambda x: f"{x:+.2f}" if not pd.isna(x) else "—",
                 "Score": lambda x: f"{x:+.3f}" if not pd.isna(x) else "—",
             })
-            .applymap(_color_pct, subset=["1h %", "24h %"])
-            .applymap(_color_score, subset=["Sentiment", "Score"])
+            .map(_color_pct, subset=["1h %", "24h %"])
+            .map(_color_score, subset=["Sentiment", "Score"])
         )
         st.dataframe(styled, use_container_width=True, hide_index=True, height=min(40 * len(rows) + 38, 520))
 
@@ -525,8 +525,8 @@ with tab_markets:
             st.subheader("Sentiment vs Forecast score")
             all_syms = list({s["symbol"] for s in (sentiment or [])} |
                             {f["symbol"] for f in (forecasts_data or [])})
-            sent_scores = [_sent_map.get(s, 0) for s in all_syms]
-            fc_scores = [_fc_map.get(s, {}).get("forecast_score", 0) for s in all_syms]
+            sent_scores = [float(_sent_map.get(s) or 0) for s in all_syms]
+            fc_scores = [float(_fc_map.get(s, {}).get("forecast_score") or 0) for s in all_syms]
             fig = go.Figure()
             fig.add_trace(go.Bar(
                 name="Sentiment", x=all_syms, y=sent_scores,
