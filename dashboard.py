@@ -252,8 +252,8 @@ macro_data = load_macro_cached()
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_portfolio, tab_markets, tab_forecast, tab_macro, tab_news, tab_orders, tab_chat, tab_guide = st.tabs(
-    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "🏦 Macro", "📰 Notizie", "📋 Ordini", "💬 Analista AI", "📚 Guida"]
+tab_portfolio, tab_markets, tab_forecast, tab_macro, tab_news, tab_orders, tab_daytrading, tab_chat, tab_guide = st.tabs(
+    ["💼 Portfolio", "📊 Mercati", "🔮 Previsioni", "🏦 Macro", "📰 Notizie", "📋 Ordini", "⚡ Day Trading", "💬 Analista AI", "📚 Guida"]
 )
 
 # ===========================================================================
@@ -816,7 +816,190 @@ with tab_orders:
             st.info("Nessun ordine eseguito.")
 
 # ===========================================================================
-# TAB 7 — ANALISTA AI (chat box)
+# TAB 7 — DAY TRADING
+# ===========================================================================
+with tab_daytrading:
+    import json as _json
+    from pathlib import Path as _Path
+
+    _cfg_path = _Path(__file__).parent / "config.json"
+    try:
+        with open(_cfg_path) as _f:
+            _full_cfg = _json.load(_f)
+        _dt_cfg = _full_cfg.get("day_trading", {})
+    except Exception:
+        _dt_cfg = {}
+        _full_cfg = {}
+
+    _dt_enabled = _dt_cfg.get("enabled", False)
+
+    # ── Header status ────────────────────────────────────────────────────
+    _status_col, _toggle_col = st.columns([3, 1])
+    with _status_col:
+        if _dt_enabled:
+            st.success("⚡ Day Trading **ATTIVO** — ciclo ogni "
+                       f"{_dt_cfg.get('cycle_minutes', 5)} minuti")
+        else:
+            st.warning("⏸️ Day Trading **DISATTIVATO** — abilita in `config.json → day_trading.enabled: true`")
+
+    with _toggle_col:
+        if st.button("✅ Attiva" if not _dt_enabled else "⏸️ Disattiva", use_container_width=True):
+            _full_cfg["day_trading"]["enabled"] = not _dt_enabled
+            with open(_cfg_path, "w") as _f:
+                _json.dump(_full_cfg, _f, indent=2)
+            st.rerun()
+
+    st.divider()
+
+    # ── Session state (live, from session_manager) ───────────────────────
+    st.subheader("📊 Sessione corrente")
+    try:
+        from agents.session_manager import get_session as _get_session
+        _sess = _get_session()
+    except Exception:
+        _sess = {}
+
+    _m1, _m2, _m3, _m4 = st.columns(4)
+    _m1.metric("📅 Data sessione",  _sess.get("date", "—"))
+    _m2.metric("🔁 Trade oggi",     _sess.get("trades_today", 0),
+               help=f"Max: {_dt_cfg.get('max_daily_trades', 10)}")
+    _pnl_pct = _sess.get("daily_pnl_pct", 0.0)
+    _m3.metric("📈 P&L giornaliero", f"{_pnl_pct:+.2f}%",
+               delta=f"€{_sess.get('daily_pnl_eur', 0.0):+.2f}",
+               delta_color="normal")
+    _open_pos = _sess.get("open_intraday_positions", {})
+    _m4.metric("📂 Posizioni aperte", len(_open_pos),
+               help=f"Max: {_dt_cfg.get('max_concurrent_positions', 3)}")
+
+    # Circuit breaker bars
+    _max_trades = _dt_cfg.get("max_daily_trades", 10)
+    _max_loss   = abs(_dt_cfg.get("max_daily_loss_pct", 2.0))
+    st.progress(
+        min(1.0, _sess.get("trades_today", 0) / max(1, _max_trades)),
+        text=f"Trade usati: {_sess.get('trades_today',0)}/{_max_trades}",
+    )
+    st.progress(
+        min(1.0, abs(_pnl_pct) / _max_loss) if _pnl_pct < 0 else 0.0,
+        text=f"Loss giornaliero: {_pnl_pct:.2f}% / -{_max_loss:.1f}% limite",
+    )
+
+    # Open intraday positions table
+    if _open_pos:
+        st.subheader("📂 Posizioni intraday aperte")
+        _rows = []
+        for _sym, _pos in _open_pos.items():
+            _rows.append({
+                "Asset":    _sym,
+                "Entry":    f"{_pos.get('entry_price', 0):.4f}",
+                "Stop Loss":f"{_pos.get('stop_loss', 0):.4f}",
+                "Take Profit": f"{_pos.get('take_profit', 0):.4f}",
+                "Importo":  f"€{_pos.get('amount_eur', 0):.2f}",
+                "P&L %":    f"{_pos.get('pnl_pct', 0.0):+.2f}%",
+                "Aperta":   _pos.get("opened_at", "")[:16],
+            })
+        st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
+
+    # Closed trades today
+    _closed = _sess.get("closed_today", [])
+    if _closed:
+        st.subheader("✅ Trade chiusi oggi")
+        _df_cl = pd.DataFrame(_closed)
+        _df_cl["pnl_pct"] = _df_cl["pnl_pct"].apply(lambda x: f"{x:+.2f}%")
+        _df_cl["pnl_eur"] = _df_cl["pnl_eur"].apply(lambda x: f"€{x:+.2f}")
+        st.dataframe(_df_cl, use_container_width=True, hide_index=True)
+
+    # Cooldowns
+    _cooldowns = {s: v for s, v in _sess.get("cooldown_symbols", {}).items()}
+    if _cooldowns:
+        import time as _time
+        _now = _time.time()
+        _cd_rows = []
+        for _s, _until in _cooldowns.items():
+            _rem = max(0, int((_until - _now) / 60))
+            if _rem > 0:
+                _cd_rows.append({"Asset": _s, "Cooldown rimanente": f"{_rem} min"})
+        if _cd_rows:
+            st.warning("⏳ Cooldown attivi (stop-loss recente)")
+            st.dataframe(pd.DataFrame(_cd_rows), use_container_width=True, hide_index=True)
+
+    st.divider()
+
+    # ── Config parameters ────────────────────────────────────────────────
+    st.subheader("⚙️ Parametri configurazione")
+    _c1, _c2, _c3 = st.columns(3)
+
+    with _c1:
+        st.markdown("**Segnali**")
+        st.metric("Score threshold",   _dt_cfg.get("score_threshold", 0.40))
+        st.metric("RSI overbought",    _dt_cfg.get("rsi_overbought", 65))
+        st.metric("RSI oversold",      _dt_cfg.get("rsi_oversold",  35))
+        st.metric("Ciclo (minuti)",    _dt_cfg.get("cycle_minutes",  5))
+
+    with _c2:
+        st.markdown("**Risk / Size**")
+        st.metric("Stop-loss (ATR ×)", _dt_cfg.get("stop_loss_atr_multiplier", 1.5))
+        st.metric("Take-profit (ATR ×)",_dt_cfg.get("take_profit_atr_multiplier", 2.5))
+        st.metric("Size posizione %",  f"{_dt_cfg.get('position_size_pct', 2.0):.1f}%")
+        st.metric("Max posizione €",   f"€{_dt_cfg.get('max_position_eur', 100):.0f}")
+
+    with _c3:
+        st.markdown("**Limiti sessione**")
+        st.metric("Max trade/giorno",   _dt_cfg.get("max_daily_trades", 10))
+        st.metric("Max loss/giorno",   f"{_dt_cfg.get('max_daily_loss_pct', -2.0):.1f}%")
+        st.metric("Max pos. concorrenti", _dt_cfg.get("max_concurrent_positions", 3))
+        st.metric("Cooldown SL (min)", _dt_cfg.get("cooldown_after_stop_minutes", 30))
+
+    with st.expander("🕐 Orari mercato"):
+        _mh = _dt_cfg.get("market_hours", {})
+        _st_mh = _mh.get("stocks", {})
+        st.markdown(f"""
+| Mercato | Orari |
+|---------|-------|
+| **Stocks/ETF (NYSE)** | {_st_mh.get('open','09:30')} – {_st_mh.get('close','16:00')} ET (lun–ven) |
+| **Crypto** | {_mh.get('crypto','24/7')} |
+        """)
+
+    with st.expander("📋 Simboli day trading"):
+        _dt_syms = _dt_cfg.get("symbols", [])
+        if _dt_syms:
+            st.write(", ".join(_dt_syms))
+        else:
+            st.info("Nessun simbolo specifico — usa la watchlist globale (ASSETS da config)")
+
+    st.divider()
+
+    # ── How it works ─────────────────────────────────────────────────────
+    with st.expander("ℹ️ Come funziona il day trading"):
+        st.markdown("""
+**Pipeline intraday (ogni 5 minuti):**
+
+1. **SessionManager** — verifica orari mercato, circuit breakers (max loss / max trade)
+2. **IntradayData** — scarica candle 5m / 15m / 1h (Binance per crypto, yfinance per stocks)
+3. **IntradaySignals** — calcola EMA 9/21, VWAP, RSI(5), ATR(14), Stochastic(5,3,3)
+4. **IntradayStrategy** — genera segnali con stop-loss e take-profit dinamici su ATR
+5. **Execution** — esegue via Revolut X (crypto) o Alpaca (stocks)
+
+**Entry LONG — tutte le condizioni:**
+- `intraday_score ≥ 0.40`
+- EMA9 > EMA21 (trend 5m rialzista)
+- RSI(5) < 65 (non esaurito)
+- Stoch %K > %D (momentum)
+- Trend 1h bullish (conferma multi-timeframe)
+- Prezzo entro -1.5% dal VWAP
+
+**Stop-loss:** `entry - ATR × 1.5`
+**Take-profit:** `entry + ATR × 2.5`  → **R:R ≈ 1:1.7**
+
+**Avvio con day trading:**
+```bash
+python main.py --loop --intraday        # swing 60min + intraday 5min
+python main.py --intraday-only          # solo intraday
+```
+        """)
+
+
+# ===========================================================================
+# TAB 8 — ANALISTA AI (chat box)
 # ===========================================================================
 with tab_chat:
     st.subheader("Analista Finanziario AI")
@@ -931,7 +1114,7 @@ with tab_guide:
     with g1:
         st.subheader("🤖 Come funziona il bot")
         st.markdown("""
-Ogni **30 minuti** il bot esegue un ciclo completo:
+Ogni **60 minuti** il bot esegue un ciclo swing completo (+ ciclo intraday ogni **5 minuti** se attivato):
 
 1. **📰 Notizie** — raccoglie da Reuters, CNBC, Yahoo Finance, WSJ
 2. **🏦 Macro** — legge Fed, BCE, World Bank (tassi, CPI, VIX, PIL)
