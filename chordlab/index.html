@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChordLab — Accordi & Trasposizione</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#252525;
+  --border:#2a2a2a;--border2:#333;
+  --text:#e8e8e8;--text2:#a0a0a0;--text3:#666;
+  --accent:#c8a45a;--accent2:#e8c27a;
+  /* colori sezione */
+  --s-intro:#3a3320;--s-verse:#1e2a3a;--s-chorus:#2a1e3a;--s-bridge:#1e3a2a;
+  --s-solo:#3a1e1e;--s-outro:#2a2a2a;--s-pre:#2a2a1a;--s-inst:#1a2a2a;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+#sidebar{width:260px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+#sidebar-header{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+#sidebar-header h1{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+#sidebar-header p{font-size:11px;color:var(--text3);margin-top:3px}
+#search{width:100%;margin-top:11px;padding:8px 11px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:13px;outline:none}
+#search:focus{border-color:var(--accent)}
+#song-list{overflow-y:auto;flex:1}
+.song-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.song-item:hover{background:var(--bg3)}
+.song-item.active{background:var(--bg4);border-left:2px solid var(--accent)}
+.song-name{font-size:13px;color:var(--text);line-height:1.3}
+.song-item.active .song-name{color:var(--accent2)}
+.song-artist-sidebar{font-size:10px;color:var(--text3);line-height:1.2;margin-top:1px}
+.song-key-chip{margin-left:auto;font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:10px;padding:1px 7px;white-space:nowrap}
+#no-results{padding:20px 14px;color:var(--text3);font-size:12px;text-align:center}
+
+/* MAIN */
+#main{flex:1;overflow-y:auto;padding:24px 30px 60px;max-width:980px}
+#no-sel{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:15px;text-align:center}
+
+/* HEADER + CONTROLS */
+.song-header h2{font-size:26px;font-weight:700;color:var(--accent2);letter-spacing:-.01em}
+.song-header .meta{font-size:14px;color:var(--text2);margin-top:3px}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:18px 0 22px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.ctl-group{display:flex;align-items:center;gap:7px}
+.ctl-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
+.key-display{font-size:15px;font-weight:700;color:var(--accent);min-width:42px;text-align:center}
+.btn{font-size:13px;padding:6px 11px;border-radius:6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .12s;user-select:none}
+.btn:hover{background:var(--bg4);color:var(--text)}
+.btn.sm{padding:5px 9px;font-size:14px;line-height:1;min-width:30px;text-align:center}
+.inst-btn.active{background:var(--accent);border-color:var(--accent);color:#1a1a1a;font-weight:600}
+.capo-chip{font-size:11px;color:var(--text3)}
+
+/* SECTIONS / MEASURES */
+.section{margin-bottom:22px}
+.section-label{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--text);padding:3px 11px;border-radius:5px;margin-bottom:9px}
+.bars{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.bar{background:var(--bg2);border:1px solid var(--border2);border-radius:5px;min-height:46px;display:flex;align-items:center;justify-content:center;gap:9px;padding:6px 4px;flex-wrap:wrap}
+.bar.empty{background:repeating-linear-gradient(45deg,var(--bg),var(--bg) 6px,var(--bg2) 6px,var(--bg2) 12px);opacity:.5}
+.chord{font-size:16px;font-weight:600;color:var(--accent2);cursor:pointer;border-bottom:1px dotted transparent;transition:all .1s}
+.chord:hover{color:#fff;border-bottom-color:var(--accent)}
+.chord sup{font-size:10px}
+
+/* CHORD STRIP (all diagrams) */
+.diag-section{margin-top:8px}
+.section-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.diag-grid{display:flex;flex-wrap:wrap;gap:14px}
+.diag-card{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:8px;display:flex;flex-direction:column;align-items:center}
+
+/* POPOVER */
+#popover{position:fixed;z-index:500;background:var(--bg3);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;box-shadow:0 10px 40px rgba(0,0,0,.6);display:none}
+#popover.show{display:block}
+#popover .pop-name{font-size:15px;font-weight:700;color:var(--accent2);text-align:center;margin-bottom:6px}
+#popover .pop-notes{font-size:11px;color:var(--text3);text-align:center;margin-top:6px}
+#pop-close{position:absolute;top:4px;right:8px;color:var(--text3);cursor:pointer;font-size:16px;line-height:1}
+
+/* TOPBAR mobile */
+#topbar{display:none;align-items:center;gap:12px;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+#hamburger{background:none;border:1px solid var(--border2);border-radius:6px;padding:6px 9px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+#hamburger span{display:block;width:18px;height:2px;background:var(--accent);border-radius:2px}
+#topbar-title{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300}
+#overlay.open{display:block}
+
+@media print{
+  body{display:block;height:auto;background:#fff;color:#000}
+  #sidebar,#topbar,#overlay,.controls .inst-btn,#popover{display:none!important}
+  #main{max-width:100%;padding:14px;overflow:visible}
+  .bar{background:#f7f7f7;border:1px solid #ccc}
+  .chord{color:#1a1a1a}
+  .section-label{color:#000!important;background:#eee!important}
+}
+
+@media(max-width:760px){
+  body{flex-direction:column;overflow:hidden}
+  #topbar{display:flex}
+  #sidebar{position:fixed;top:0;left:0;bottom:0;z-index:400;transform:translateX(-100%);width:280px;transition:transform .25s ease}
+  #sidebar.open{transform:translateX(0)}
+  #sidebar-header{padding-top:50px}
+  #main{flex:1;overflow-y:auto;padding:14px 14px 50px;width:100%}
+  .bars{grid-template-columns:repeat(2,1fr)}
+  .song-header h2{font-size:21px}
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button id="hamburger" onclick="toggleMenu()" aria-label="Apri elenco">
+    <span></span><span></span><span></span>
+  </button>
+  <span id="topbar-title">ChordLab</span>
+</div>
+<div id="overlay" onclick="closeMenu()"></div>
+
+<nav id="sidebar">
+  <div id="sidebar-header">
+    <h1>🎼 ChordLab</h1>
+    <p id="lib-count">— brani</p>
+    <input id="search" type="search" placeholder="Cerca brano, artista, tag…" autocomplete="off">
+  </div>
+  <div id="song-list"></div>
+</nav>
+
+<main id="main">
+  <div id="content"><div id="no-sel">Seleziona un brano dall'elenco<br><span style="font-size:12px;opacity:.6">oppure cerca qui sopra</span></div></div>
+</main>
+
+<div id="popover">
+  <span id="pop-close" onclick="closePopover()">×</span>
+  <div class="pop-name"></div>
+  <div class="pop-svg"></div>
+  <div class="pop-notes"></div>
+</div>
+
+<script src="engine.js"></script>
+<script src="instruments.js"></script>
+<script src="songs.js"></script>
+<script>
+'use strict';
+var SONGS = window.SONGS || [];
+var E = window.ChordEngine;
+var INST = window.Instruments;
+
+var state = { sel: null, transpose: 0, instrument: 'guitar', showAll: true, filter: '' };
+
+/* ---- section color mapping ---- */
+function sectionColor(name){
+  var n = (name||'').toLowerCase();
+  if(n.indexOf('intro')>=0) return 'var(--s-intro)';
+  if(n.indexOf('pre')>=0) return 'var(--s-pre)';
+  if(n.indexOf('chorus')>=0||n.indexOf('rit')>=0) return 'var(--s-chorus)';
+  if(n.indexOf('verse')>=0||n.indexOf('strofa')>=0) return 'var(--s-verse)';
+  if(n.indexOf('bridge')>=0||n.indexOf('ponte')>=0) return 'var(--s-bridge)';
+  if(n.indexOf('solo')>=0) return 'var(--s-solo)';
+  if(n.indexOf('inst')>=0) return 'var(--s-inst)';
+  return 'var(--s-outro)';
+}
+
+/* ---- current (transposed) key label ---- */
+function curKey(s){
+  return E.transposeKeyName(s.key, state.transpose);
+}
+function targetKeyForSpelling(s){
+  // ChordEngine expects a key string; pass the transposed key label
+  return curKey(s);
+}
+
+/* ---- transpose a single chord symbol for display ---- */
+function dispChord(s, sym){
+  if(state.transpose === 0) return sym;
+  try { return E.transposeSmart(sym, state.transpose, targetKeyForSpelling(s)); }
+  catch(e){ return sym; }
+}
+
+/* ---- pretty chord HTML (superscript the suffix) ---- */
+function chordHTML(sym){
+  var p = E.parse(sym);
+  if(!p) return '<span class="chord" data-sym="'+sym+'">'+sym+'</span>';
+  var root = p.root + (p.bass ? '' : '');
+  var suf = p.suffix || '';
+  var bass = p.bass ? '/'+p.bass : '';
+  var inner = root + (suf ? '<sup>'+suf+'</sup>' : '') + bass;
+  return '<span class="chord" data-sym="'+sym.replace(/"/g,'')+'">'+inner+'</span>';
+}
+
+/* ---- collect unique chords (transposed) of current song ---- */
+function uniqueChords(s){
+  var seen = {}, out = [];
+  s.sections.forEach(function(sec){
+    (sec.bars||[]).forEach(function(bar){
+      String(bar).trim().split(/\s+/).forEach(function(tok){
+        if(!tok) return;
+        var d = dispChord(s, tok);
+        if(!seen[d]){ seen[d]=1; out.push(d); }
+      });
+    });
+  });
+  return out;
+}
+
+/* ================= SIDEBAR ================= */
+function buildSidebar(){
+  var f = state.filter.toLowerCase().trim();
+  var list = SONGS.filter(function(s){
+    if(!f) return true;
+    var hay = (s.title+' '+s.artist+' '+(s.key||'')+' '+(s.tags||[]).join(' ')).toLowerCase();
+    return hay.indexOf(f) >= 0;
+  });
+  document.getElementById('lib-count').textContent = SONGS.length + ' brani in libreria';
+  var el = document.getElementById('song-list');
+  if(!list.length){ el.innerHTML = '<div id="no-results">Nessun brano trovato per “'+f+'”</div>'; return; }
+  el.innerHTML = list.map(function(s){
+    var active = s.id===state.sel ? ' active' : '';
+    return '<div class="song-item'+active+'" onclick="pick(\''+s.id+'\')">'+
+      '<div><div class="song-name">'+s.title+'</div>'+
+      '<div class="song-artist-sidebar">'+s.artist+(s.year?' · '+s.year:'')+'</div></div>'+
+      '<span class="song-key-chip">'+s.key+'</span></div>';
+  }).join('');
+}
+
+/* ================= MAIN RENDER ================= */
+function pick(id){
+  state.sel = id; state.transpose = 0;
+  buildSidebar(); render(); closeMenu();
+  document.getElementById('main').scrollTop = 0;
+}
+
+function bump(n){ state.transpose = ((state.transpose + n) % 12 + 12) % 12; if(state.transpose>6) state.transpose-=12; render(); }
+function resetKey(){ state.transpose = 0; render(); }
+function setInstrument(id){ state.instrument = id; render(); }
+function toggleAll(){ state.showAll = !state.showAll; render(); }
+
+function render(){
+  var s = SONGS.filter(function(x){return x.id===state.sel;})[0];
+  if(!s){ return; }
+  var tShow = state.transpose>0 ? ' (+'+state.transpose+')' : (state.transpose<0 ? ' ('+state.transpose+')' : '');
+  var capo = (s.capo ? '<span class="capo-chip">🎯 Capo '+s.capo+'</span>' : '');
+
+  // controls
+  var instBtns = INST.LIST.map(function(i){
+    var a = i===state.instrument ? ' active' : '';
+    return '<span class="btn inst-btn'+a+'" onclick="setInstrument(\''+i+'\')">'+INST.label(i)+'</span>';
+  }).join('');
+
+  var html = ''+
+  '<div class="song-header"><h2>'+s.title+'</h2><div class="meta">'+s.artist+(s.year?' · '+s.year:'')+'</div></div>'+
+  '<div class="controls">'+
+    '<div class="ctl-group"><span class="ctl-label">Tonalità</span>'+
+      '<span class="btn sm" onclick="bump(-1)">−</span>'+
+      '<span class="key-display">'+curKey(s)+'</span>'+
+      '<span class="btn sm" onclick="bump(1)">+</span>'+
+      '<span class="btn" onclick="resetKey()">Reset'+tShow+'</span></div>'+
+    capo+
+    '<div class="ctl-group" style="margin-left:auto"><span class="ctl-label">Strumento</span>'+instBtns+'</div>'+
+    '<span class="btn" onclick="toggleAll()">'+(state.showAll?'Nascondi':'Mostra')+' diagrammi</span>'+
+    '<span class="btn" onclick="window.print()">🖨 Stampa</span>'+
+  '</div>';
+
+  // sections
+  s.sections.forEach(function(sec){
+    var col = sectionColor(sec.name);
+    html += '<div class="section"><span class="section-label" style="background:'+col+'">'+sec.name+'</span><div class="bars">';
+    (sec.bars||[]).forEach(function(bar){
+      var toks = String(bar).trim().split(/\s+/).filter(Boolean);
+      if(!toks.length){ html += '<div class="bar empty"></div>'; return; }
+      var inner = toks.map(function(t){ return chordHTML(dispChord(s,t)); }).join('');
+      html += '<div class="bar">'+inner+'</div>';
+    });
+    html += '</div></div>';
+  });
+
+  // all-chords diagram strip
+  if(state.showAll){
+    var chords = uniqueChords(s);
+    html += '<div class="diag-section"><div class="section-title">Diagrammi — '+INST.label(state.instrument)+' · '+chords.length+' accordi</div><div class="diag-grid">';
+    chords.forEach(function(c){
+      var svg='';
+      try { svg = INST.render(state.instrument, c, {}); } catch(e){ svg='<div style="color:#a55;font-size:11px">n/d</div>'; }
+      html += '<div class="diag-card">'+svg+'</div>';
+    });
+    html += '</div></div>';
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+/* ================= POPOVER (click chord -> diagram) ================= */
+function showPopover(sym, x, y){
+  var pop = document.getElementById('popover');
+  pop.querySelector('.pop-name').textContent = sym;
+  var svg=''; try{ svg = INST.render(state.instrument, sym, {}); }catch(e){ svg='voicing n/d'; }
+  pop.querySelector('.pop-svg').innerHTML = svg;
+  var p = E.parse(sym);
+  if(p){
+    var useFlats = E.keyUsesFlats(curKeySafe());
+    pop.querySelector('.pop-notes').textContent = 'Note: ' + p.pcs.map(function(pc){return E.noteName(pc, useFlats);}).join(' · ');
+  } else { pop.querySelector('.pop-notes').textContent=''; }
+  pop.classList.add('show');
+  // position
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.min(x, window.innerWidth - pw - 12);
+  var top = y + 18; if(top + ph > window.innerHeight - 8) top = y - ph - 12;
+  pop.style.left = Math.max(8,left)+'px';
+  pop.style.top = Math.max(8,top)+'px';
+}
+function curKeySafe(){ var s=SONGS.filter(function(x){return x.id===state.sel;})[0]; return s?curKey(s):'C'; }
+function closePopover(){ document.getElementById('popover').classList.remove('show'); }
+
+document.addEventListener('click', function(ev){
+  var c = ev.target.closest && ev.target.closest('.chord');
+  if(c){ ev.stopPropagation(); showPopover(c.getAttribute('data-sym'), ev.clientX, ev.clientY); return; }
+  if(!ev.target.closest || !ev.target.closest('#popover')) closePopover();
+});
+
+/* ================= SEARCH ================= */
+document.getElementById('search').addEventListener('input', function(e){
+  state.filter = e.target.value; buildSidebar();
+});
+
+/* ================= MOBILE MENU ================= */
+function toggleMenu(){ var sb=document.getElementById('sidebar'), ov=document.getElementById('overlay'); var o=sb.classList.toggle('open'); ov.classList.toggle('open',o); }
+function closeMenu(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+/* ================= INIT ================= */
+buildSidebar();
+if(SONGS.length){ pick(SONGS[0].id); }
+</script>
+</body>
+</html>
