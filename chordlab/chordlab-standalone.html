@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChordLab — Accordi & Trasposizione</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#252525;
+  --border:#2a2a2a;--border2:#333;
+  --text:#e8e8e8;--text2:#a0a0a0;--text3:#666;
+  --accent:#c8a45a;--accent2:#e8c27a;
+  /* colori sezione */
+  --s-intro:#3a3320;--s-verse:#1e2a3a;--s-chorus:#2a1e3a;--s-bridge:#1e3a2a;
+  --s-solo:#3a1e1e;--s-outro:#2a2a2a;--s-pre:#2a2a1a;--s-inst:#1a2a2a;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+#sidebar{width:260px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+#sidebar-header{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+#sidebar-header h1{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+#sidebar-header p{font-size:11px;color:var(--text3);margin-top:3px}
+#search{width:100%;margin-top:11px;padding:8px 11px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:13px;outline:none}
+#search:focus{border-color:var(--accent)}
+#song-list{overflow-y:auto;flex:1}
+.song-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.song-item:hover{background:var(--bg3)}
+.song-item.active{background:var(--bg4);border-left:2px solid var(--accent)}
+.song-name{font-size:13px;color:var(--text);line-height:1.3}
+.song-item.active .song-name{color:var(--accent2)}
+.song-artist-sidebar{font-size:10px;color:var(--text3);line-height:1.2;margin-top:1px}
+.song-key-chip{margin-left:auto;font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:10px;padding:1px 7px;white-space:nowrap}
+#no-results{padding:20px 14px;color:var(--text3);font-size:12px;text-align:center}
+
+/* MAIN */
+#main{flex:1;overflow-y:auto;padding:24px 30px 60px;max-width:980px}
+#no-sel{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:15px;text-align:center}
+
+/* HEADER + CONTROLS */
+.song-header h2{font-size:26px;font-weight:700;color:var(--accent2);letter-spacing:-.01em}
+.song-header .meta{font-size:14px;color:var(--text2);margin-top:3px}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:18px 0 22px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.ctl-group{display:flex;align-items:center;gap:7px}
+.ctl-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
+.key-display{font-size:15px;font-weight:700;color:var(--accent);min-width:42px;text-align:center}
+.btn{font-size:13px;padding:6px 11px;border-radius:6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .12s;user-select:none}
+.btn:hover{background:var(--bg4);color:var(--text)}
+.btn.sm{padding:5px 9px;font-size:14px;line-height:1;min-width:30px;text-align:center}
+.inst-btn.active{background:var(--accent);border-color:var(--accent);color:#1a1a1a;font-weight:600}
+.capo-chip{font-size:11px;color:var(--text3)}
+
+/* SECTIONS / MEASURES */
+.section{margin-bottom:22px}
+.section-label{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--text);padding:3px 11px;border-radius:5px;margin-bottom:9px}
+.bars{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.bar{background:var(--bg2);border:1px solid var(--border2);border-radius:5px;min-height:46px;display:flex;align-items:center;justify-content:center;gap:9px;padding:6px 4px;flex-wrap:wrap}
+.bar.empty{background:repeating-linear-gradient(45deg,var(--bg),var(--bg) 6px,var(--bg2) 6px,var(--bg2) 12px);opacity:.5}
+.chord{font-size:16px;font-weight:600;color:var(--accent2);cursor:pointer;border-bottom:1px dotted transparent;transition:all .1s}
+.chord:hover{color:#fff;border-bottom-color:var(--accent)}
+.chord sup{font-size:10px}
+
+/* CHORD STRIP (all diagrams) */
+.diag-section{margin-top:8px}
+.section-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.diag-grid{display:flex;flex-wrap:wrap;gap:14px}
+.diag-card{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:8px;display:flex;flex-direction:column;align-items:center}
+
+/* POPOVER */
+#popover{position:fixed;z-index:500;background:var(--bg3);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;box-shadow:0 10px 40px rgba(0,0,0,.6);display:none}
+#popover.show{display:block}
+#popover .pop-name{font-size:15px;font-weight:700;color:var(--accent2);text-align:center;margin-bottom:6px}
+#popover .pop-notes{font-size:11px;color:var(--text3);text-align:center;margin-top:6px}
+#pop-close{position:absolute;top:4px;right:8px;color:var(--text3);cursor:pointer;font-size:16px;line-height:1}
+
+/* TOPBAR mobile */
+#topbar{display:none;align-items:center;gap:12px;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+#hamburger{background:none;border:1px solid var(--border2);border-radius:6px;padding:6px 9px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+#hamburger span{display:block;width:18px;height:2px;background:var(--accent);border-radius:2px}
+#topbar-title{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300}
+#overlay.open{display:block}
+
+@media print{
+  body{display:block;height:auto;background:#fff;color:#000}
+  #sidebar,#topbar,#overlay,.controls .inst-btn,#popover{display:none!important}
+  #main{max-width:100%;padding:14px;overflow:visible}
+  .bar{background:#f7f7f7;border:1px solid #ccc}
+  .chord{color:#1a1a1a}
+  .section-label{color:#000!important;background:#eee!important}
+}
+
+@media(max-width:760px){
+  body{flex-direction:column;overflow:hidden}
+  #topbar{display:flex}
+  #sidebar{position:fixed;top:0;left:0;bottom:0;z-index:400;transform:translateX(-100%);width:280px;transition:transform .25s ease}
+  #sidebar.open{transform:translateX(0)}
+  #sidebar-header{padding-top:50px}
+  #main{flex:1;overflow-y:auto;padding:14px 14px 50px;width:100%}
+  .bars{grid-template-columns:repeat(2,1fr)}
+  .song-header h2{font-size:21px}
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button id="hamburger" onclick="toggleMenu()" aria-label="Apri elenco">
+    <span></span><span></span><span></span>
+  </button>
+  <span id="topbar-title">ChordLab</span>
+</div>
+<div id="overlay" onclick="closeMenu()"></div>
+
+<nav id="sidebar">
+  <div id="sidebar-header">
+    <h1>🎼 ChordLab</h1>
+    <p id="lib-count">— brani</p>
+    <input id="search" type="search" placeholder="Cerca brano, artista, tag…" autocomplete="off">
+  </div>
+  <div id="song-list"></div>
+</nav>
+
+<main id="main">
+  <div id="content"><div id="no-sel">Seleziona un brano dall'elenco<br><span style="font-size:12px;opacity:.6">oppure cerca qui sopra</span></div></div>
+</main>
+
+<div id="popover">
+  <span id="pop-close" onclick="closePopover()">×</span>
+  <div class="pop-name"></div>
+  <div class="pop-svg"></div>
+  <div class="pop-notes"></div>
+</div>
+
+<script>
+// engine.js — ChordLab Music Engine
+// Vanilla JS, no dependencies, runs under file://. Pure music-theory functions.
+(function () {
+  'use strict';
+
+  var SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  var FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+  // Map a note name (with optional # or b, incl. double accidentals) to pitch class 0..11.
+  var BASE_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+  function noteToPc(note) {
+    if (!note) return null;
+    var letter = note.charAt(0).toUpperCase();
+    if (!(letter in BASE_PC)) return null;
+    var pc = BASE_PC[letter];
+    for (var i = 1; i < note.length; i++) {
+      var c = note.charAt(i);
+      if (c === '#' || c === '♯') pc += 1;
+      else if (c === 'b' || c === 'B' || c === '♭') pc -= 1;
+      else break;
+    }
+    return ((pc % 12) + 12) % 12;
+  }
+
+  function noteName(pc, useFlats) {
+    pc = ((pc % 12) + 12) % 12;
+    return (useFlats ? FLAT : SHARP)[pc];
+  }
+
+  // Quality table: normalized quality => { suffix, intervals }
+  // Order of detection matters; longer/more-specific suffixes checked first.
+  // intervals are semitones above root.
+  var QUALITIES = [
+    // half-diminished
+    { keys: ['m7b5', 'min7b5', 'm7-5', 'ø', 'o7b5'], quality: 'm7b5', suffix: 'm7b5', intervals: [0, 3, 6, 10] },
+    // diminished 7
+    { keys: ['dim7', '°7'], quality: 'dim7', suffix: 'dim7', intervals: [0, 3, 6, 9] },
+    // diminished triad
+    { keys: ['dim', '°'], quality: 'dim', suffix: 'dim', intervals: [0, 3, 6] },
+    // augmented
+    { keys: ['aug', '+'], quality: 'aug', suffix: 'aug', intervals: [0, 4, 8] },
+    // major seventh
+    { keys: ['maj7', 'M7', 'Maj7', 'ma7', '△7', 'Δ', 'Δ7'], quality: 'maj7', suffix: 'maj7', intervals: [0, 4, 7, 11] },
+    { keys: ['maj9', 'M9'], quality: 'maj9', suffix: 'maj9', intervals: [0, 4, 7, 11, 14] },
+    // minor extensions (check before plain 'm')
+    { keys: ['m9', 'min9', '-9'], quality: 'm9', suffix: 'm9', intervals: [0, 3, 7, 10, 14] },
+    { keys: ['m7', 'min7', '-7'], quality: 'm7', suffix: 'm7', intervals: [0, 3, 7, 10] },
+    { keys: ['m6', 'min6', '-6'], quality: 'm6', suffix: 'm6', intervals: [0, 3, 7, 9] },
+    { keys: ['madd9', 'maddd9'], quality: 'madd9', suffix: 'madd9', intervals: [0, 3, 7, 14] },
+    // sus chords
+    { keys: ['sus2'], quality: 'sus2', suffix: 'sus2', intervals: [0, 2, 7] },
+    { keys: ['sus4', 'sus'], quality: 'sus4', suffix: 'sus4', intervals: [0, 5, 7] },
+    { keys: ['7sus4', '7sus'], quality: '7sus4', suffix: '7sus4', intervals: [0, 5, 7, 10] },
+    // dominants / extensions
+    { keys: ['9'], quality: '9', suffix: '9', intervals: [0, 4, 7, 10, 14] },
+    { keys: ['add9', 'add2'], quality: 'add9', suffix: 'add9', intervals: [0, 4, 7, 14] },
+    { keys: ['6'], quality: '6', suffix: '6', intervals: [0, 4, 7, 9] },
+    { keys: ['7'], quality: '7', suffix: '7', intervals: [0, 4, 7, 10] },
+    // plain minor (after all m-prefixed extensions)
+    { keys: ['m', 'min', '-'], quality: 'm', suffix: 'm', intervals: [0, 3, 7] }
+  ];
+
+  function findQuality(rest) {
+    // rest is the suffix string after the root (already stripped of slash bass)
+    if (rest === '' || rest == null) {
+      return { quality: 'maj', suffix: '', intervals: [0, 4, 7] };
+    }
+    for (var i = 0; i < QUALITIES.length; i++) {
+      var q = QUALITIES[i];
+      for (var k = 0; k < q.keys.length; k++) {
+        if (rest === q.keys[k]) {
+          return { quality: q.quality, suffix: q.suffix, intervals: q.intervals.slice() };
+        }
+      }
+    }
+    // Unknown quality: treat chord-tones as major triad but keep textual suffix.
+    return { quality: 'maj', suffix: rest, intervals: [0, 4, 7] };
+  }
+
+  // Extract a root note from the start of a string. Returns [rootStr, restStr] or null.
+  function extractRoot(s) {
+    if (!s) return null;
+    var m = /^([A-Ga-g])([#b♯♭]*)/.exec(s);
+    if (!m) return null;
+    var root = m[1].toUpperCase() + m[2].replace(/♯/g, '#').replace(/♭/g, 'b');
+    return [root, s.slice(m[0].length)];
+  }
+
+  function parse(sym) {
+    if (typeof sym !== 'string') return null;
+    var raw = sym;
+    var s = sym.trim();
+    if (s === '') return null;
+
+    // Slash chord: split bass
+    var bass = null, bassPc = null;
+    var slashIdx = s.indexOf('/');
+    var main = s;
+    if (slashIdx !== -1) {
+      var bassPart = s.slice(slashIdx + 1).trim();
+      main = s.slice(0, slashIdx).trim();
+      var be = extractRoot(bassPart);
+      if (be) {
+        bass = be[0];
+        bassPc = noteToPc(bass);
+      }
+    }
+
+    var re = extractRoot(main);
+    if (!re) return null;
+    var root = re[0];
+    var rest = re[1].trim();
+    var rootPc = noteToPc(root);
+    if (rootPc == null) return null;
+
+    var q = findQuality(rest);
+    var intervals = q.intervals.slice();
+    var pcs = intervals.map(function (iv) {
+      return ((rootPc + iv) % 12 + 12) % 12;
+    });
+
+    return {
+      root: root,
+      rootPc: rootPc,
+      quality: q.quality,
+      suffix: q.suffix,
+      bass: bass,
+      bassPc: bassPc,
+      intervals: intervals,
+      pcs: pcs,
+      raw: raw
+    };
+  }
+
+  function pcs(sym) {
+    var p = parse(sym);
+    return p ? p.pcs.slice() : [];
+  }
+
+  function transposeChord(sym, n, useFlats) {
+    var p = parse(sym);
+    if (!p) return sym;
+    var newRootPc = ((p.rootPc + n) % 12 + 12) % 12;
+    var out = noteName(newRootPc, useFlats) + p.suffix;
+    if (p.bass != null && p.bassPc != null) {
+      var newBassPc = ((p.bassPc + n) % 12 + 12) % 12;
+      out += '/' + noteName(newBassPc, useFlats);
+    }
+    return out;
+  }
+
+  // Relative-minor flat keys plus their major equivalents.
+  // Flat major keys: F, Bb, Eb, Ab, Db, Gb, Cb
+  // Their relative minors: Dm, Gm, Cm, Fm, Bbm, Ebm, Abm
+  var FLAT_KEYS = {
+    'F': true, 'Bb': true, 'Eb': true, 'Ab': true, 'Db': true, 'Gb': true, 'Cb': true,
+    'DM': true, 'GM': true, 'CM': true, 'FM': true, 'BBM': true, 'EBM': true, 'ABM': true
+  };
+
+  function normalizeKey(keyName) {
+    if (typeof keyName !== 'string') return '';
+    var k = keyName.trim();
+    // Normalize accidental glyphs
+    k = k.replace(/♯/g, '#').replace(/♭/g, 'b');
+    return k;
+  }
+
+  function keyUsesFlats(keyName) {
+    var k = normalizeKey(keyName);
+    if (k === '') return false;
+    // Minor key? ends with 'm' (but not part of root name)
+    var isMinor = /m$/.test(k) && k.length > 1 && !/^[A-G][#b]?$/.test(k);
+    if (isMinor) {
+      var minorKey = k.toUpperCase();
+      return !!FLAT_KEYS[minorKey];
+    }
+    // Major key
+    var majorKey = k.charAt(0).toUpperCase() + k.slice(1);
+    return !!FLAT_KEYS[majorKey];
+  }
+
+  function transposeSmart(sym, semitones, targetKey) {
+    var useFlats = keyUsesFlats(targetKey);
+    return transposeChord(sym, semitones, useFlats);
+  }
+
+  function transposeKeyName(key, n) {
+    var k = normalizeKey(key);
+    if (k === '') return key;
+    var isMinor = /m$/.test(k) && k.length > 1 && !/^[A-G][#b]?$/.test(k);
+    var rootStr = isMinor ? k.slice(0, -1) : k;
+    var re = extractRoot(rootStr);
+    if (!re) return key;
+    var pc = noteToPc(re[0]);
+    if (pc == null) return key;
+    var newPc = ((pc + n) % 12 + 12) % 12;
+    // Choose spelling based on resulting key's flat-ness.
+    var sharpName = noteName(newPc, false);
+    var flatName = noteName(newPc, true);
+    var candidate = (isMinor ? sharpName + 'm' : sharpName);
+    var useFlats = keyUsesFlats(candidate) || keyUsesFlats(isMinor ? flatName + 'm' : flatName);
+    var name = noteName(newPc, useFlats);
+    return isMinor ? name + 'm' : name;
+  }
+
+  window.ChordEngine = {
+    SHARP: SHARP,
+    FLAT: FLAT,
+    parse: parse,
+    pcs: pcs,
+    transposeChord: transposeChord,
+    transposeSmart: transposeSmart,
+    transposeKeyName: transposeKeyName,
+    keyUsesFlats: keyUsesFlats,
+    noteName: noteName
+  };
+})();
+
+</script>
+<script>
+/* ChordLab — instruments.js
+ * window.Instruments : diagrammi accordo (chitarra/ukulele) + tastiera piano.
+ * Vanilla JS, nessuna dipendenza, funziona sotto file://.
+ * Si appoggia a window.ChordEngine (caricato prima) per parse()/pcs().
+ */
+(function () {
+  'use strict';
+
+  // ---- Tema ----
+  var COL = {
+    grid: '#555',
+    string: '#888',
+    dot: '#c8a45a',
+    dotText: '#1a1a1a',
+    text: '#e8e8e8',
+    muted: '#888',
+    whiteKey: '#f4f4f4',
+    whiteKeyEdge: '#777',
+    blackKey: '#222',
+    keyHi: '#c8a45a',
+    rootHi: '#e07b39'
+  };
+  var FONT = 'sans-serif';
+
+  // ============================================================
+  //  Curated open-chord dictionaries
+  //  Per fret string: index 0 = string più bassa (E grave per chitarra,
+  //  G per ukulele). Valori: numero di fret, 0 = open (corda a vuoto),
+  //  -1 = muted (x). barre opzionale: {fret, from, to}
+  // ============================================================
+
+  // GUITAR (EADGBE, 6 strings). Frets array length 6, low E .. high E.
+  var GUITAR_OPEN = {
+    'C':      { frets: [-1, 3, 2, 0, 1, 0] },
+    'Cmaj7':  { frets: [-1, 3, 2, 0, 0, 0] },
+    'C7':     { frets: [-1, 3, 2, 3, 1, 0] },
+    'C6':     { frets: [-1, 3, 2, 2, 1, 0] },
+    'Cm':     { frets: [-1, 3, 5, 5, 4, 3], barre: { fret: 3, from: 1, to: 5 } },
+    'Csus4':  { frets: [-1, 3, 3, 0, 1, 1] },
+    'Csus2':  { frets: [-1, 3, 0, 0, 1, 3] },
+
+    'D':      { frets: [-1, -1, 0, 2, 3, 2] },
+    'Dm':     { frets: [-1, -1, 0, 2, 3, 1] },
+    'D7':     { frets: [-1, -1, 0, 2, 1, 2] },
+    'Dm7':    { frets: [-1, -1, 0, 2, 1, 1] },
+    'Dmaj7':  { frets: [-1, -1, 0, 2, 2, 2] },
+    'Dsus4':  { frets: [-1, -1, 0, 2, 3, 3] },
+    'Dsus2':  { frets: [-1, -1, 0, 2, 3, 0] },
+    'D6':     { frets: [-1, -1, 0, 2, 0, 2] },
+    'Ddim':   { frets: [-1, -1, 0, 1, 0, 1] },
+
+    'E':      { frets: [0, 2, 2, 1, 0, 0] },
+    'Em':     { frets: [0, 2, 2, 0, 0, 0] },
+    'E7':     { frets: [0, 2, 0, 1, 0, 0] },
+    'Em7':    { frets: [0, 2, 0, 0, 0, 0] },
+    'Emaj7':  { frets: [0, 2, 1, 1, 0, 0] },
+    'Esus4':  { frets: [0, 2, 2, 2, 0, 0] },
+    'E6':     { frets: [0, 2, 2, 1, 2, 0] },
+
+    'F':      { frets: [1, 3, 3, 2, 1, 1], barre: { fret: 1, from: 0, to: 5 } },
+    'Fmaj7':  { frets: [-1, -1, 3, 2, 1, 0] },
+    'Fm':     { frets: [1, 3, 3, 1, 1, 1], barre: { fret: 1, from: 0, to: 5 } },
+    'F7':     { frets: [1, 3, 1, 2, 1, 1], barre: { fret: 1, from: 0, to: 5 } },
+
+    'G':      { frets: [3, 2, 0, 0, 0, 3] },
+    'Gm':     { frets: [3, 5, 5, 3, 3, 3], barre: { fret: 3, from: 0, to: 5 } },
+    'G7':     { frets: [3, 2, 0, 0, 0, 1] },
+    'Gmaj7':  { frets: [3, 2, 0, 0, 0, 2] },
+    'Gm7':    { frets: [3, 5, 3, 3, 3, 3], barre: { fret: 3, from: 0, to: 5 } },
+    'Gsus4':  { frets: [3, 3, 0, 0, 1, 3] },
+    'G6':     { frets: [3, 2, 0, 0, 0, 0] },
+
+    'A':      { frets: [-1, 0, 2, 2, 2, 0] },
+    'Am':     { frets: [-1, 0, 2, 2, 1, 0] },
+    'A7':     { frets: [-1, 0, 2, 0, 2, 0] },
+    'Am7':    { frets: [-1, 0, 2, 0, 1, 0] },
+    'Amaj7':  { frets: [-1, 0, 2, 1, 2, 0] },
+    'Asus4':  { frets: [-1, 0, 2, 2, 3, 0] },
+    'Asus2':  { frets: [-1, 0, 2, 2, 0, 0] },
+    'A6':     { frets: [-1, 0, 2, 2, 2, 2] },
+    'Adim':   { frets: [-1, 0, 1, 2, 1, -1] },
+
+    'B':      { frets: [-1, 2, 4, 4, 4, 2], barre: { fret: 2, from: 1, to: 5 } },
+    'Bm':     { frets: [-1, 2, 4, 4, 3, 2], barre: { fret: 2, from: 1, to: 5 } },
+    'B7':     { frets: [-1, 2, 1, 2, 0, 2] },
+    'Bm7':    { frets: [-1, 2, 4, 2, 3, 2], barre: { fret: 2, from: 1, to: 5 } },
+
+    'Bb':     { frets: [-1, 1, 3, 3, 3, 1], barre: { fret: 1, from: 1, to: 5 } },
+    'Bbm':    { frets: [-1, 1, 3, 3, 2, 1], barre: { fret: 1, from: 1, to: 5 } },
+    'Bb7':    { frets: [-1, 1, 3, 1, 3, 1], barre: { fret: 1, from: 1, to: 5 } },
+    'Bbmaj7': { frets: [-1, 1, 3, 2, 3, 1], barre: { fret: 1, from: 1, to: 5 } }
+  };
+
+  // UKULELE (GCEA, 4 strings). Frets array length 4, g C E A.
+  var UKE_OPEN = {
+    'C':      { frets: [0, 0, 0, 3] },
+    'Cmaj7':  { frets: [0, 0, 0, 2] },
+    'C7':     { frets: [0, 0, 0, 1] },
+    'Cm':     { frets: [0, 3, 3, 3] },
+    'Cm7':    { frets: [3, 3, 3, 3], barre: { fret: 3, from: 0, to: 3 } },
+    'C6':     { frets: [0, 0, 0, 0] },
+    'Csus4':  { frets: [0, 0, 1, 3] },
+    'Csus2':  { frets: [0, 2, 3, 3] },
+    'Cdim':   { frets: [2, 3, 2, 3] },
+
+    'D':      { frets: [2, 2, 2, 0] },
+    'Dm':     { frets: [2, 2, 1, 0] },
+    'D7':     { frets: [2, 2, 2, 3] },
+    'Dm7':    { frets: [2, 2, 1, 3] },
+    'Dmaj7':  { frets: [2, 2, 2, 4] },
+    'Dsus4':  { frets: [0, 2, 3, 0] },
+    'Dsus2':  { frets: [2, 2, 0, 0] },
+    'D6':     { frets: [2, 2, 2, 2] },
+
+    'E':      { frets: [4, 4, 4, 2] },
+    'Em':     { frets: [0, 4, 3, 2] },
+    'E7':     { frets: [1, 2, 0, 2] },
+    'Em7':    { frets: [0, 2, 0, 2] },
+    'Emaj7':  { frets: [1, 3, 0, 2] },
+
+    'F':      { frets: [2, 0, 1, 0] },
+    'Fm':     { frets: [1, 0, 1, 3] },
+    'F7':     { frets: [2, 3, 1, 0] },
+    'Fm7':    { frets: [1, 3, 1, 3] },
+    'Fmaj7':  { frets: [2, 4, 1, 3] },
+    'Fsus4':  { frets: [3, 0, 1, 1] },
+    'F6':     { frets: [2, 2, 1, 3] },
+
+    'G':      { frets: [0, 2, 3, 2] },
+    'Gm':     { frets: [0, 2, 3, 1] },
+    'G7':     { frets: [0, 2, 1, 2] },
+    'Gm7':    { frets: [0, 2, 1, 1] },
+    'Gmaj7':  { frets: [0, 2, 2, 2] },
+    'Gsus4':  { frets: [0, 2, 3, 3] },
+    'Gsus2':  { frets: [0, 2, 3, 0] },
+    'G6':     { frets: [0, 2, 0, 2] },
+
+    'A':      { frets: [2, 1, 0, 0] },
+    'Am':     { frets: [2, 0, 0, 0] },
+    'A7':     { frets: [0, 1, 0, 0] },
+    'Am7':    { frets: [0, 0, 0, 0] },
+    'Amaj7':  { frets: [1, 1, 0, 0] },
+    'Asus4':  { frets: [2, 2, 0, 0] },
+    'Asus2':  { frets: [2, 4, 5, 2] },
+    'A6':     { frets: [2, 4, 3, 4] },
+
+    'B':      { frets: [4, 3, 2, 2], barre: { fret: 2, from: 2, to: 3 } },
+    'Bm':     { frets: [4, 2, 2, 2], barre: { fret: 2, from: 1, to: 3 } },
+    'B7':     { frets: [2, 3, 2, 2], barre: { fret: 2, from: 0, to: 3 } },
+    'Bm7':    { frets: [2, 2, 2, 2], barre: { fret: 2, from: 0, to: 3 } },
+
+    'Bb':     { frets: [3, 2, 1, 1], barre: { fret: 1, from: 2, to: 3 } },
+    'Bbm':    { frets: [3, 1, 1, 1], barre: { fret: 1, from: 1, to: 3 } },
+    'Bb7':    { frets: [1, 2, 1, 1], barre: { fret: 1, from: 0, to: 3 } },
+    'Bbm7':   { frets: [1, 1, 1, 1], barre: { fret: 1, from: 0, to: 3 } },
+    'Bbmaj7': { frets: [3, 2, 1, 0] }
+  };
+
+  // Movable barre templates for guitar — relative to a base fret.
+  // 'E-shape' rooted on low E string, 'A-shape' rooted on A string.
+  // offsets: per string fret offset (0 = barre fret), null = muted.
+  var GUITAR_ESHAPE = {
+    '':     [0, 2, 2, 1, 0, 0],
+    'm':    [0, 2, 2, 0, 0, 0],
+    '7':    [0, 2, 0, 1, 0, 0],
+    'm7':   [0, 2, 0, 0, 0, 0],
+    'maj7': [0, 2, 1, 1, 0, 0]
+  };
+  var GUITAR_ASHAPE = {
+    '':     [null, 0, 2, 2, 2, 0],
+    'm':    [null, 0, 2, 2, 1, 0],
+    '7':    [null, 0, 2, 0, 2, 0],
+    'm7':   [null, 0, 2, 0, 1, 0],
+    'maj7': [null, 0, 2, 1, 2, 0]
+  };
+
+  var SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  var FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+  function pcOfNote(name) {
+    var i = SHARP.indexOf(name);
+    if (i >= 0) return i;
+    i = FLAT.indexOf(name);
+    return i; // -1 if unknown
+  }
+
+  // Map a quality/suffix to one of our dictionary keys (best effort).
+  function suffixKey(suffix) {
+    var s = (suffix || '').trim();
+    var map = {
+      '': '', 'maj': '', 'M': '',
+      'm': 'm', 'min': 'm', '-': 'm',
+      '7': '7', 'dom7': '7',
+      'maj7': 'maj7', 'M7': 'maj7', 'Δ': 'maj7',
+      'm7': 'm7', 'min7': 'm7',
+      'sus4': 'sus4', 'sus': 'sus4',
+      'sus2': 'sus2',
+      '6': '6', 'maj6': '6',
+      'm6': 'm6', 'min6': 'm6',
+      'dim': 'dim', '°': 'dim', 'm7b5': 'dim'
+    };
+    if (map.hasOwnProperty(s)) return map[s];
+    return s;
+  }
+
+  // Get a canonical parse without throwing. Falls back to a local parser
+  // if ChordEngine is unavailable (shouldn't happen at runtime).
+  function safeParse(sym) {
+    try {
+      if (window.ChordEngine && typeof window.ChordEngine.parse === 'function') {
+        var p = window.ChordEngine.parse(sym);
+        if (p) return p;
+      }
+    } catch (e) { /* ignore */ }
+    return localParse(sym);
+  }
+
+  function safePcs(sym) {
+    try {
+      if (window.ChordEngine && typeof window.ChordEngine.pcs === 'function') {
+        var arr = window.ChordEngine.pcs(sym);
+        if (arr && arr.length) return arr;
+      }
+    } catch (e) { /* ignore */ }
+    var p = safeParse(sym);
+    if (p && p.pcs) return p.pcs;
+    if (p) {
+      return [(p.rootPc + 0) % 12, (p.rootPc + 4) % 12, (p.rootPc + 7) % 12];
+    }
+    return [];
+  }
+
+  // Minimal local parser — only used if ChordEngine missing.
+  function localParse(sym) {
+    if (!sym || typeof sym !== 'string') return null;
+    var m = sym.match(/^([A-G][#b]?)(.*)$/);
+    if (!m) return null;
+    var root = m[1];
+    var rest = m[2] || '';
+    var bass = null, bassPc = null;
+    var slash = rest.indexOf('/');
+    if (slash >= 0) {
+      bass = rest.slice(slash + 1);
+      rest = rest.slice(0, slash);
+      bassPc = pcOfNote(bass);
+    }
+    var rootPc = pcOfNote(root);
+    if (rootPc < 0) return null;
+    var quals = {
+      '': [0, 4, 7], 'm': [0, 3, 7], '7': [0, 4, 7, 10],
+      'maj7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10],
+      'm7b5': [0, 3, 6, 10], 'dim': [0, 3, 6], 'aug': [0, 4, 8],
+      '6': [0, 4, 7, 9], 'm6': [0, 3, 7, 9], 'sus2': [0, 2, 7],
+      'sus4': [0, 5, 7], '9': [0, 4, 7, 10, 2], 'add9': [0, 4, 7, 2],
+      'm9': [0, 3, 7, 10, 2]
+    };
+    var iv = quals[rest] || [0, 4, 7];
+    var pcs = iv.map(function (x) { return (rootPc + x) % 12; });
+    return {
+      root: root, rootPc: rootPc, quality: rest, suffix: rest,
+      bass: bass, bassPc: bassPc, intervals: iv, pcs: pcs, raw: sym
+    };
+  }
+
+  // ============================================================
+  //  SVG helpers
+  // ============================================================
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ============================================================
+  //  Voicing resolution for fretted instruments
+  //  Returns: { frets:[...], barre:{fret,from,to}|null, base:int, approx:bool }
+  //  base = lowest displayed fret number (for position label)
+  // ============================================================
+
+  function lookupOpen(dict, root, sufKey) {
+    var key = root + sufKey;
+    if (dict[key]) return cloneShape(dict[key]);
+    // Try enharmonic equivalent for root
+    var pc = pcOfNote(root);
+    if (pc >= 0) {
+      var alt = (SHARP[pc] === root) ? FLAT[pc] : SHARP[pc];
+      if (alt !== root && dict[alt + sufKey]) return cloneShape(dict[alt + sufKey]);
+    }
+    return null;
+  }
+
+  function cloneShape(s) {
+    return {
+      frets: s.frets.slice(),
+      barre: s.barre ? { fret: s.barre.fret, from: s.barre.from, to: s.barre.to } : null
+    };
+  }
+
+  // Derive a guitar movable barre shape.
+  function guitarMovable(rootPc, sufKey) {
+    // E-shape root pitch on open low-E string = E (pc 4).
+    var tplE = GUITAR_ESHAPE[sufKey];
+    if (tplE) {
+      var fretE = ((rootPc - 4) % 12 + 12) % 12;
+      if (fretE === 0) fretE = 12; // avoid open-position barre at nut for movable
+      var frets = tplE.map(function (o) { return o === null ? -1 : fretE + o; });
+      return { frets: frets, barre: { fret: fretE, from: 0, to: 5 }, base: fretE };
+    }
+    return null;
+  }
+
+  function guitarMovableA(rootPc, sufKey) {
+    var tplA = GUITAR_ASHAPE[sufKey];
+    if (tplA) {
+      // A-shape root on A string (pc 9).
+      var fretA = ((rootPc - 9) % 12 + 12) % 12;
+      if (fretA === 0) fretA = 12;
+      var frets = tplA.map(function (o) { return o === null ? -1 : fretA + o; });
+      return { frets: frets, barre: { fret: fretA, from: 1, to: 5 }, base: fretA };
+    }
+    return null;
+  }
+
+  // Derive ukulele movable shape: shift the canonical C-rooted (or other) shape.
+  // We use the C-shape templates for the quality if present and shift up.
+  var UKE_CSHAPE = {
+    '':     { frets: [0, 0, 0, 3], rootPc: 0 },
+    'm':    { frets: [0, 3, 3, 3], rootPc: 0 },
+    '7':    { frets: [0, 0, 0, 1], rootPc: 0 },
+    'm7':   { frets: [3, 3, 3, 3], rootPc: 0 },
+    'maj7': { frets: [0, 0, 0, 2], rootPc: 0 }
+  };
+
+  function ukeMovable(rootPc, sufKey) {
+    var tpl = UKE_CSHAPE[sufKey];
+    if (!tpl) return null;
+    var shift = ((rootPc - tpl.rootPc) % 12 + 12) % 12;
+    if (shift === 0) return null; // C itself, should have been in dict
+    var frets = tpl.frets.map(function (f) { return f + shift; });
+    var barre = null;
+    var minPlayed = Math.min.apply(null, frets);
+    if (minPlayed > 0) barre = { fret: minPlayed, from: 0, to: 3 };
+    return { frets: frets, barre: barre, base: minPlayed };
+  }
+
+  // Best-effort dots from chord-tone pitch classes on open strings.
+  // tuning = pc of each open string (low->high).
+  function approxFromPcs(tuning, pcs) {
+    var frets = [];
+    for (var s = 0; s < tuning.length; s++) {
+      var openPc = tuning[s];
+      var best = -1;
+      // find lowest fret 0..4 that lands on a chord tone
+      for (var f = 0; f <= 4; f++) {
+        if (pcs.indexOf((openPc + f) % 12) >= 0) { best = f; break; }
+      }
+      frets.push(best);
+    }
+    return { frets: frets, barre: null, base: 0, approx: true };
+  }
+
+  var GUITAR_TUNING = [4, 9, 2, 7, 11, 4];   // E A D G B E
+  var UKE_TUNING = [7, 0, 4, 9];             // G C E A
+
+  function resolveVoicing(instrument, parsed) {
+    var dict = instrument === 'ukulele' ? UKE_OPEN : GUITAR_OPEN;
+    var tuning = instrument === 'ukulele' ? UKE_TUNING : GUITAR_TUNING;
+    var sufKey = suffixKey(parsed.suffix);
+
+    // 1) curated open shape
+    var v = lookupOpen(dict, parsed.root, sufKey);
+    if (v) {
+      v.base = minNonZero(v.frets);
+      v.approx = false;
+      return v;
+    }
+
+    // 2) movable barre
+    var mv = null;
+    if (instrument === 'guitar') {
+      mv = guitarMovable(parsed.rootPc, sufKey) || guitarMovableA(parsed.rootPc, sufKey);
+    } else {
+      mv = ukeMovable(parsed.rootPc, sufKey);
+    }
+    if (mv) { mv.approx = false; return mv; }
+
+    // 3) best-effort dots from pcs
+    var pcs = (parsed.pcs && parsed.pcs.length) ? parsed.pcs : safePcs(parsed.raw || '');
+    return approxFromPcs(tuning, pcs);
+  }
+
+  function minNonZero(frets) {
+    var min = 99;
+    for (var i = 0; i < frets.length; i++) {
+      if (frets[i] > 0 && frets[i] < min) min = frets[i];
+    }
+    return min === 99 ? 1 : min;
+  }
+
+  // ============================================================
+  //  Render fretboard (guitar / ukulele)
+  // ============================================================
+  function renderFretboard(instrument, sym, opts) {
+    opts = opts || {};
+    var parsed = safeParse(sym);
+    var nStrings = instrument === 'ukulele' ? 4 : 6;
+    var v;
+    if (parsed) {
+      v = resolveVoicing(instrument, parsed);
+    } else {
+      // unparseable: empty grid w/ message
+      v = { frets: new Array(nStrings).fill(-1), barre: null, base: 1, approx: true };
+    }
+
+    var frets = v.frets;
+    // Determine fret window (number of frets shown) and starting fret.
+    var played = frets.filter(function (f) { return f > 0; });
+    var maxFret = played.length ? Math.max.apply(null, played) : 0;
+    var minFret = played.length ? Math.min.apply(null, played) : 0;
+    var FRETS = 5;
+    var startFret = 1;
+    if (maxFret > FRETS) {
+      startFret = minFret; // shift window up the neck
+    }
+    var span = Math.max(FRETS, maxFret - startFret + 1);
+    if (span > 6) span = 6;
+    FRETS = span < 4 ? 4 : span;
+
+    var width = opts.width || (instrument === 'ukulele' ? 130 : 150);
+    var padL = 22, padR = 16, padT = 30, padB = 18;
+    var boxW = width - padL - padR;
+    var stringGap = boxW / (nStrings - 1);
+    var fretGap = 26;
+    var boxH = fretGap * FRETS;
+    var height = padT + boxH + padB + 14;
+
+    var x0 = padL;
+    var y0 = padT;
+
+    var parts = [];
+    parts.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + width +
+      '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height +
+      '" font-family="' + FONT + '">');
+
+    // Title (chord name)
+    parts.push('<text x="' + (width / 2) + '" y="16" fill="' + COL.text +
+      '" font-size="14" font-weight="600" text-anchor="middle">' +
+      esc(sym) + '</text>');
+
+    // Nut (thick) only if starting at fret 1
+    if (startFret === 1) {
+      parts.push('<rect x="' + x0 + '" y="' + (y0 - 3) + '" width="' + boxW +
+        '" height="4" fill="' + COL.string + '"/>');
+    } else {
+      // position label on the left
+      parts.push('<text x="' + (x0 - 8) + '" y="' + (y0 + fretGap - 9) +
+        '" fill="' + COL.text + '" font-size="11" text-anchor="end">' +
+        startFret + 'fr</text>');
+    }
+
+    // Fret lines (horizontal)
+    for (var f = 0; f <= FRETS; f++) {
+      var y = y0 + f * fretGap;
+      parts.push('<line x1="' + x0 + '" y1="' + y + '" x2="' + (x0 + boxW) +
+        '" y2="' + y + '" stroke="' + COL.grid + '" stroke-width="1"/>');
+    }
+    // Strings (vertical)
+    for (var s = 0; s < nStrings; s++) {
+      var x = x0 + s * stringGap;
+      parts.push('<line x1="' + x + '" y1="' + y0 + '" x2="' + x +
+        '" y2="' + (y0 + boxH) + '" stroke="' + COL.string + '" stroke-width="1"/>');
+    }
+
+    // Barre
+    if (v.barre) {
+      var br = v.barre;
+      var brRow = br.fret - startFret; // 0-based fret row
+      if (brRow >= 0 && brRow < FRETS) {
+        var bx1 = x0 + br.from * stringGap;
+        var bx2 = x0 + br.to * stringGap;
+        var by = y0 + brRow * fretGap + fretGap / 2;
+        parts.push('<rect x="' + (bx1 - 6) + '" y="' + (by - 7) + '" width="' +
+          (bx2 - bx1 + 12) + '" height="14" rx="7" fill="' + COL.dot +
+          '" opacity="0.92"/>');
+      }
+    }
+
+    // Open / muted markers above nut + dots
+    for (var si = 0; si < nStrings; si++) {
+      var fr = frets[si];
+      var sx = x0 + si * stringGap;
+      if (fr === -1 || fr === undefined) {
+        // muted x
+        parts.push('<text x="' + sx + '" y="' + (y0 - 6) + '" fill="' + COL.muted +
+          '" font-size="12" text-anchor="middle">×</text>');
+      } else if (fr === 0) {
+        // open o
+        parts.push('<circle cx="' + sx + '" cy="' + (y0 - 9) + '" r="4" fill="none" stroke="' +
+          COL.string + '" stroke-width="1.4"/>');
+      } else {
+        var row = fr - startFret;
+        if (row < 0 || row >= FRETS) continue;
+        // skip drawing dot if it's part of the barre at same fret (still show finger dots above barre)
+        var cy = y0 + row * fretGap + fretGap / 2;
+        var isBarreFret = v.barre && fr === v.barre.fret && si >= v.barre.from && si <= v.barre.to;
+        if (isBarreFret) continue; // covered by barre rect
+        parts.push('<circle cx="' + sx + '" cy="' + cy + '" r="7" fill="' + COL.dot + '"/>');
+      }
+    }
+
+    // approx label
+    if (v.approx) {
+      parts.push('<text x="' + (width / 2) + '" y="' + (height - 3) +
+        '" fill="' + COL.muted + '" font-size="9" text-anchor="middle">voicing approx</text>');
+    }
+
+    parts.push('</svg>');
+    return parts.join('');
+  }
+
+  // ============================================================
+  //  Render piano (~2 octaves)
+  // ============================================================
+  function renderPiano(sym, opts) {
+    opts = opts || {};
+    var parsed = safeParse(sym);
+    var pcs = (parsed && parsed.pcs && parsed.pcs.length) ? parsed.pcs.slice() : safePcs(sym);
+    var pcSet = {};
+    pcs.forEach(function (p) { pcSet[((p % 12) + 12) % 12] = true; });
+    var rootPc = parsed ? parsed.rootPc : (pcs.length ? pcs[0] : -1);
+    var bassPc = (parsed && parsed.bassPc != null) ? parsed.bassPc : null;
+
+    var OCT = 2;
+    var whitePerOct = 7;
+    var totalWhite = OCT * whitePerOct + 1; // include final C
+    var width = opts.width || 220;
+    var padT = 26, padB = 6, padX = 4;
+    var wkW = (width - padX * 2) / totalWhite;
+    var wkH = 70;
+    var bkW = wkW * 0.62;
+    var bkH = wkH * 0.62;
+    var height = padT + wkH + padB;
+
+    // white key semitone offsets within an octave
+    var whiteSemis = [0, 2, 4, 5, 7, 9, 11];
+    // black key: which white-key index it sits after, and its semitone
+    var blackAfter = [
+      { after: 0, semi: 1 },
+      { after: 1, semi: 3 },
+      { after: 3, semi: 6 },
+      { after: 4, semi: 8 },
+      { after: 5, semi: 10 }
+    ];
+
+    var parts = [];
+    parts.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + width +
+      '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height +
+      '" font-family="' + FONT + '">');
+    parts.push('<text x="' + (width / 2) + '" y="16" fill="' + COL.text +
+      '" font-size="14" font-weight="600" text-anchor="middle">' + esc(sym) + '</text>');
+
+    function fillFor(pc) {
+      if (pc === rootPc) return COL.rootHi;
+      if (bassPc != null && pc === bassPc) return COL.rootHi;
+      if (pcSet[pc]) return COL.keyHi;
+      return null;
+    }
+
+    // Draw white keys
+    var wi = 0;
+    for (var o = 0; o < OCT; o++) {
+      for (var k = 0; k < whitePerOct; k++) {
+        var pc = whiteSemis[k];
+        var x = padX + wi * wkW;
+        var hl = fillFor(pc);
+        var fill = hl || COL.whiteKey;
+        parts.push('<rect x="' + x.toFixed(2) + '" y="' + padT + '" width="' + wkW.toFixed(2) +
+          '" height="' + wkH + '" fill="' + fill + '" stroke="' + COL.whiteKeyEdge +
+          '" stroke-width="1"/>');
+        wi++;
+      }
+    }
+    // final C
+    (function () {
+      var x = padX + wi * wkW;
+      var hl = fillFor(0);
+      var fill = hl || COL.whiteKey;
+      parts.push('<rect x="' + x.toFixed(2) + '" y="' + padT + '" width="' + wkW.toFixed(2) +
+        '" height="' + wkH + '" fill="' + fill + '" stroke="' + COL.whiteKeyEdge +
+        '" stroke-width="1"/>');
+    })();
+
+    // Draw black keys on top
+    for (var oo = 0; oo < OCT; oo++) {
+      var base = oo * whitePerOct;
+      for (var b = 0; b < blackAfter.length; b++) {
+        var ba = blackAfter[b];
+        var wcenter = padX + (base + ba.after + 1) * wkW;
+        var bx = wcenter - bkW / 2;
+        var pcb = ba.semi;
+        var hlb = fillFor(pcb);
+        var fillb = hlb || COL.blackKey;
+        parts.push('<rect x="' + bx.toFixed(2) + '" y="' + padT + '" width="' + bkW.toFixed(2) +
+          '" height="' + bkH.toFixed(2) + '" fill="' + fillb + '" stroke="#000" stroke-width="1" rx="1"/>');
+      }
+    }
+
+    parts.push('</svg>');
+    return parts.join('');
+  }
+
+  // ============================================================
+  //  Public API
+  // ============================================================
+  var LABELS = { guitar: 'Chitarra', ukulele: 'Ukulele', piano: 'Piano' };
+
+  window.Instruments = {
+    LIST: ['guitar', 'ukulele', 'piano'],
+    label: function (id) {
+      return LABELS[id] || id;
+    },
+    render: function (instrument, sym, opts) {
+      try {
+        if (instrument === 'piano') return renderPiano(sym, opts);
+        if (instrument === 'guitar' || instrument === 'ukulele') {
+          return renderFretboard(instrument, sym, opts);
+        }
+        // unknown instrument -> default to guitar
+        return renderFretboard('guitar', sym, opts);
+      } catch (e) {
+        // never throw: return a minimal valid svg
+        var w = (opts && opts.width) || 140;
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="40" ' +
+          'font-family="' + FONT + '"><text x="' + (w / 2) + '" y="24" fill="' + COL.text +
+          '" font-size="12" text-anchor="middle">' + esc(sym || '') + ' — voicing n/d</text></svg>';
+      }
+    }
+  };
+})();
+
+</script>
+<script>
+// ChordLab — songs.js
+// Defines window.SONGS, an array of song objects per CONTRACT.md section 3.
+// Chord symbols use the ChordEngine format (e.g. F, Em7, A7, Dm/C, Bbmaj7, A7sus4).
+window.SONGS = [
+  {
+    id: 'yesterday',
+    title: 'Yesterday',
+    artist: 'The Beatles',
+    year: '1965',
+    key: 'F',
+    capo: 0,
+    tags: ['ballad', '60s', 'beatles', 'acoustic'],
+    sections: [
+      { name: 'Intro', bars: ['F', 'F'] },
+      {
+        name: 'Verse',
+        bars: ['F', 'Em7 A7', 'Dm', 'Dm/C Bbmaj7 C7', 'F Em', 'Dm7 G7', 'Bb F']
+      },
+      {
+        name: 'Bridge',
+        bars: ['Em7 A7', 'Dm C Bb Dm/A', 'Gm7 C7', 'F F7', 'Em7 A7', 'Dm C Bb Dm/A', 'Gm7 C7', 'F']
+      },
+      {
+        name: 'Verse',
+        bars: ['F', 'Em7 A7', 'Dm', 'Dm/C Bbmaj7 C7', 'F Em', 'Dm7 G7', 'Bb F']
+      },
+      {
+        name: 'Outro',
+        bars: ['F/C G7/B', 'Bb F']
+      }
+    ]
+  },
+  {
+    id: 'knockin-heavens-door',
+    title: "Knockin' on Heaven's Door",
+    artist: 'Bob Dylan',
+    year: '1973',
+    key: 'G',
+    capo: 0,
+    tags: ['folk', 'rock', '70s', 'classic'],
+    sections: [
+      {
+        name: 'Verse',
+        bars: ['G', 'D', 'Am', 'Am', 'G', 'D', 'C', 'C']
+      },
+      {
+        name: 'Chorus',
+        bars: ['G', 'D', 'C', 'C', 'G', 'D', 'C', 'C']
+      }
+    ]
+  },
+  {
+    id: 'let-it-be',
+    title: 'Let It Be',
+    artist: 'The Beatles',
+    year: '1970',
+    key: 'C',
+    capo: 0,
+    tags: ['ballad', 'beatles', 'piano', '70s'],
+    sections: [
+      {
+        name: 'Verse',
+        bars: ['C', 'G', 'Am', 'F', 'C', 'G', 'F C', 'C']
+      },
+      {
+        name: 'Chorus',
+        bars: ['Am', 'G', 'F', 'C', 'C', 'G', 'F C', 'C']
+      },
+      {
+        name: 'Outro',
+        bars: ['C', 'G', 'F C', 'C']
+      }
+    ]
+  },
+  {
+    id: 'stand-by-me',
+    title: 'Stand By Me',
+    artist: 'Ben E. King',
+    year: '1961',
+    key: 'A',
+    capo: 0,
+    tags: ['soul', 'oldies', '60s', 'classic'],
+    sections: [
+      {
+        name: 'Intro',
+        bars: ['A', 'A', 'F#m', 'F#m', 'D', 'E', 'A', 'A']
+      },
+      {
+        name: 'Verse',
+        bars: ['A', 'A', 'F#m', 'F#m', 'D', 'E', 'A', 'A']
+      },
+      {
+        name: 'Chorus',
+        bars: ['A', 'A', 'F#m', 'F#m', 'D', 'E', 'A', 'A']
+      }
+    ]
+  },
+  {
+    id: 'wonderwall',
+    title: 'Wonderwall',
+    artist: 'Oasis',
+    year: '1995',
+    key: 'F#m',
+    capo: 2,
+    tags: ['britpop', 'rock', '90s', 'acoustic'],
+    sections: [
+      {
+        name: 'Intro',
+        bars: ['Em7', 'G', 'Dsus4', 'A7sus4']
+      },
+      {
+        name: 'Verse',
+        bars: ['Em7', 'G', 'Dsus4', 'A7sus4', 'Em7', 'G', 'Dsus4', 'A7sus4']
+      },
+      {
+        name: 'Pre-Chorus',
+        bars: ['C', 'D', 'A7sus4', 'A7sus4', 'C', 'D', 'G', 'G']
+      },
+      {
+        name: 'Chorus',
+        bars: ['Cadd9', 'Em7', 'G', 'Em7', 'Cadd9', 'Em7', 'G', 'G']
+      }
+    ]
+  },
+  {
+    id: 'hey-jude',
+    title: 'Hey Jude',
+    artist: 'The Beatles',
+    year: '1968',
+    key: 'F',
+    capo: 0,
+    tags: ['ballad', 'beatles', '60s', 'anthem'],
+    sections: [
+      {
+        name: 'Verse',
+        bars: ['F', 'C', 'C7', 'F', 'Bb', 'F', 'C7', 'F']
+      },
+      {
+        name: 'Bridge',
+        bars: ['Bb', 'Bb', 'F', 'F', 'C7', 'C7', 'F', 'F']
+      },
+      {
+        name: 'Outro',
+        bars: ['F', 'Eb', 'Bb', 'F']
+      }
+    ]
+  },
+  {
+    id: 'wish-you-were-here',
+    title: 'Wish You Were Here',
+    artist: 'Pink Floyd',
+    year: '1975',
+    key: 'G',
+    capo: 0,
+    tags: ['rock', 'acoustic', '70s', 'classic'],
+    sections: [
+      {
+        name: 'Intro',
+        bars: ['Em7', 'G', 'Em7', 'G', 'Em7', 'A7sus4', 'Em7', 'A7sus4', 'G']
+      },
+      {
+        name: 'Verse',
+        bars: ['C', 'D', 'Am', 'Am', 'G', 'D', 'C', 'C', 'Am', 'Am', 'G', 'G']
+      }
+    ]
+  }
+];
+
+</script>
+<script>
+'use strict';
+var SONGS = window.SONGS || [];
+var E = window.ChordEngine;
+var INST = window.Instruments;
+
+var state = { sel: null, transpose: 0, instrument: 'guitar', showAll: true, filter: '' };
+
+/* ---- section color mapping ---- */
+function sectionColor(name){
+  var n = (name||'').toLowerCase();
+  if(n.indexOf('intro')>=0) return 'var(--s-intro)';
+  if(n.indexOf('pre')>=0) return 'var(--s-pre)';
+  if(n.indexOf('chorus')>=0||n.indexOf('rit')>=0) return 'var(--s-chorus)';
+  if(n.indexOf('verse')>=0||n.indexOf('strofa')>=0) return 'var(--s-verse)';
+  if(n.indexOf('bridge')>=0||n.indexOf('ponte')>=0) return 'var(--s-bridge)';
+  if(n.indexOf('solo')>=0) return 'var(--s-solo)';
+  if(n.indexOf('inst')>=0) return 'var(--s-inst)';
+  return 'var(--s-outro)';
+}
+
+/* ---- current (transposed) key label ---- */
+function curKey(s){
+  return E.transposeKeyName(s.key, state.transpose);
+}
+function targetKeyForSpelling(s){
+  // ChordEngine expects a key string; pass the transposed key label
+  return curKey(s);
+}
+
+/* ---- transpose a single chord symbol for display ---- */
+function dispChord(s, sym){
+  if(state.transpose === 0) return sym;
+  try { return E.transposeSmart(sym, state.transpose, targetKeyForSpelling(s)); }
+  catch(e){ return sym; }
+}
+
+/* ---- pretty chord HTML (superscript the suffix) ---- */
+function chordHTML(sym){
+  var p = E.parse(sym);
+  if(!p) return '<span class="chord" data-sym="'+sym+'">'+sym+'</span>';
+  var root = p.root + (p.bass ? '' : '');
+  var suf = p.suffix || '';
+  var bass = p.bass ? '/'+p.bass : '';
+  var inner = root + (suf ? '<sup>'+suf+'</sup>' : '') + bass;
+  return '<span class="chord" data-sym="'+sym.replace(/"/g,'')+'">'+inner+'</span>';
+}
+
+/* ---- collect unique chords (transposed) of current song ---- */
+function uniqueChords(s){
+  var seen = {}, out = [];
+  s.sections.forEach(function(sec){
+    (sec.bars||[]).forEach(function(bar){
+      String(bar).trim().split(/\s+/).forEach(function(tok){
+        if(!tok) return;
+        var d = dispChord(s, tok);
+        if(!seen[d]){ seen[d]=1; out.push(d); }
+      });
+    });
+  });
+  return out;
+}
+
+/* ================= SIDEBAR ================= */
+function buildSidebar(){
+  var f = state.filter.toLowerCase().trim();
+  var list = SONGS.filter(function(s){
+    if(!f) return true;
+    var hay = (s.title+' '+s.artist+' '+(s.key||'')+' '+(s.tags||[]).join(' ')).toLowerCase();
+    return hay.indexOf(f) >= 0;
+  });
+  document.getElementById('lib-count').textContent = SONGS.length + ' brani in libreria';
+  var el = document.getElementById('song-list');
+  if(!list.length){ el.innerHTML = '<div id="no-results">Nessun brano trovato per “'+f+'”</div>'; return; }
+  el.innerHTML = list.map(function(s){
+    var active = s.id===state.sel ? ' active' : '';
+    return '<div class="song-item'+active+'" onclick="pick(\''+s.id+'\')">'+
+      '<div><div class="song-name">'+s.title+'</div>'+
+      '<div class="song-artist-sidebar">'+s.artist+(s.year?' · '+s.year:'')+'</div></div>'+
+      '<span class="song-key-chip">'+s.key+'</span></div>';
+  }).join('');
+}
+
+/* ================= MAIN RENDER ================= */
+function pick(id){
+  state.sel = id; state.transpose = 0;
+  buildSidebar(); render(); closeMenu();
+  document.getElementById('main').scrollTop = 0;
+}
+
+function bump(n){ state.transpose = ((state.transpose + n) % 12 + 12) % 12; if(state.transpose>6) state.transpose-=12; render(); }
+function resetKey(){ state.transpose = 0; render(); }
+function setInstrument(id){ state.instrument = id; render(); }
+function toggleAll(){ state.showAll = !state.showAll; render(); }
+
+function render(){
+  var s = SONGS.filter(function(x){return x.id===state.sel;})[0];
+  if(!s){ return; }
+  var tShow = state.transpose>0 ? ' (+'+state.transpose+')' : (state.transpose<0 ? ' ('+state.transpose+')' : '');
+  var capo = (s.capo ? '<span class="capo-chip">🎯 Capo '+s.capo+'</span>' : '');
+
+  // controls
+  var instBtns = INST.LIST.map(function(i){
+    var a = i===state.instrument ? ' active' : '';
+    return '<span class="btn inst-btn'+a+'" onclick="setInstrument(\''+i+'\')">'+INST.label(i)+'</span>';
+  }).join('');
+
+  var html = ''+
+  '<div class="song-header"><h2>'+s.title+'</h2><div class="meta">'+s.artist+(s.year?' · '+s.year:'')+'</div></div>'+
+  '<div class="controls">'+
+    '<div class="ctl-group"><span class="ctl-label">Tonalità</span>'+
+      '<span class="btn sm" onclick="bump(-1)">−</span>'+
+      '<span class="key-display">'+curKey(s)+'</span>'+
+      '<span class="btn sm" onclick="bump(1)">+</span>'+
+      '<span class="btn" onclick="resetKey()">Reset'+tShow+'</span></div>'+
+    capo+
+    '<div class="ctl-group" style="margin-left:auto"><span class="ctl-label">Strumento</span>'+instBtns+'</div>'+
+    '<span class="btn" onclick="toggleAll()">'+(state.showAll?'Nascondi':'Mostra')+' diagrammi</span>'+
+    '<span class="btn" onclick="window.print()">🖨 Stampa</span>'+
+  '</div>';
+
+  // sections
+  s.sections.forEach(function(sec){
+    var col = sectionColor(sec.name);
+    html += '<div class="section"><span class="section-label" style="background:'+col+'">'+sec.name+'</span><div class="bars">';
+    (sec.bars||[]).forEach(function(bar){
+      var toks = String(bar).trim().split(/\s+/).filter(Boolean);
+      if(!toks.length){ html += '<div class="bar empty"></div>'; return; }
+      var inner = toks.map(function(t){ return chordHTML(dispChord(s,t)); }).join('');
+      html += '<div class="bar">'+inner+'</div>';
+    });
+    html += '</div></div>';
+  });
+
+  // all-chords diagram strip
+  if(state.showAll){
+    var chords = uniqueChords(s);
+    html += '<div class="diag-section"><div class="section-title">Diagrammi — '+INST.label(state.instrument)+' · '+chords.length+' accordi</div><div class="diag-grid">';
+    chords.forEach(function(c){
+      var svg='';
+      try { svg = INST.render(state.instrument, c, {}); } catch(e){ svg='<div style="color:#a55;font-size:11px">n/d</div>'; }
+      html += '<div class="diag-card">'+svg+'</div>';
+    });
+    html += '</div></div>';
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+/* ================= POPOVER (click chord -> diagram) ================= */
+function showPopover(sym, x, y){
+  var pop = document.getElementById('popover');
+  pop.querySelector('.pop-name').textContent = sym;
+  var svg=''; try{ svg = INST.render(state.instrument, sym, {}); }catch(e){ svg='voicing n/d'; }
+  pop.querySelector('.pop-svg').innerHTML = svg;
+  var p = E.parse(sym);
+  if(p){
+    var useFlats = E.keyUsesFlats(curKeySafe());
+    pop.querySelector('.pop-notes').textContent = 'Note: ' + p.pcs.map(function(pc){return E.noteName(pc, useFlats);}).join(' · ');
+  } else { pop.querySelector('.pop-notes').textContent=''; }
+  pop.classList.add('show');
+  // position
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.min(x, window.innerWidth - pw - 12);
+  var top = y + 18; if(top + ph > window.innerHeight - 8) top = y - ph - 12;
+  pop.style.left = Math.max(8,left)+'px';
+  pop.style.top = Math.max(8,top)+'px';
+}
+function curKeySafe(){ var s=SONGS.filter(function(x){return x.id===state.sel;})[0]; return s?curKey(s):'C'; }
+function closePopover(){ document.getElementById('popover').classList.remove('show'); }
+
+document.addEventListener('click', function(ev){
+  var c = ev.target.closest && ev.target.closest('.chord');
+  if(c){ ev.stopPropagation(); showPopover(c.getAttribute('data-sym'), ev.clientX, ev.clientY); return; }
+  if(!ev.target.closest || !ev.target.closest('#popover')) closePopover();
+});
+
+/* ================= SEARCH ================= */
+document.getElementById('search').addEventListener('input', function(e){
+  state.filter = e.target.value; buildSidebar();
+});
+
+/* ================= MOBILE MENU ================= */
+function toggleMenu(){ var sb=document.getElementById('sidebar'), ov=document.getElementById('overlay'); var o=sb.classList.toggle('open'); ov.classList.toggle('open',o); }
+function closeMenu(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+/* ================= INIT ================= */
+buildSidebar();
+if(SONGS.length){ pick(SONGS[0].id); }
+</script>
+</body>
+</html>
