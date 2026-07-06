@@ -2,6 +2,19 @@
 
 Sistema multi-agent (Claude Code) per monitoraggio e analisi del portafoglio Revolut Personal.
 
+## 🤖 v2 — Bot autonomo piccoli capitali
+
+Il ramo v2 aggiunge un motore di trading autonomo per capitali 50–2000 €
+(crypto via Revolut X con TPSL nativo, stock/ETF frazionari via Alpaca
+opzionale): cost gate su fee+spread, sizing risk-based su ATR,
+anti-overtrading, circuit-breaker di drawdown, kill-switch, ledger fiscale
+(Quadro RT LIFO / RW-IVAFE), backtester offline e dashboard mobile read-only.
+Setup, chiavi e procedura go-live: vedi **[SKILL.md](SKILL.md)**.
+
+> ⚠️ **Disclaimer** — Sistema sperimentale a scopo personale/educativo.
+> Il trading automatizzato può amplificare le perdite. Nessuna garanzia di
+> rendimento. Le decisioni fiscali restano responsabilità dell'utente.
+
 ## ⚠️ Nota importante
 
 Revolut Personal non espone API per l'esecuzione di ordini di trading.

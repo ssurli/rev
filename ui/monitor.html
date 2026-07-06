@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>rev-bot — monitor</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922; --blue: #58a6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 12px; max-width: 640px; margin: 0 auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  h1 { font-size: 18px; padding: 8px 4px; display: flex; justify-content: space-between; align-items: center; }
+  h1 small { color: var(--muted); font-size: 11px; font-weight: 400; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .banner { border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; font-weight: 600; font-size: 14px; display: none; }
+  .banner.kill { display: block; background: #3d1214; color: var(--red); border: 1px solid var(--red); }
+  .banner.halt { display: block; background: #3a2c0f; color: var(--yellow); border: 1px solid var(--yellow); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .stat .value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  h2 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 4px 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 11px; padding: 4px 6px; }
+  td { padding: 6px; border-top: 1px solid var(--border); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.paper { background: #1c2d41; color: var(--blue); }
+  .badge.live  { background: #3d1214; color: var(--red); }
+  .badge.buy   { background: #12351c; color: var(--green); }
+  .badge.sell, .badge.trim { background: #3d1214; color: var(--red); }
+  #chart { width: 100%; height: 120px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+  .footer { color: var(--muted); font-size: 11px; text-align: center; padding: 8px 0 16px; }
+  .err { color: var(--red); font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>📊 rev-bot <small id="updated">…</small></h1>
+
+  <div id="banner-kill" class="banner">⛔ KILL-SWITCH ATTIVO — bot fermo</div>
+  <div id="banner-halt" class="banner">🛑 CIRCUIT-BREAKER — flat &amp; halt, sblocco manuale richiesto</div>
+
+  <div class="card grid">
+    <div class="stat">
+      <div class="label">Equity</div>
+      <div class="value" id="equity">—</div>
+      <div class="sub" id="mode-badge"></div>
+    </div>
+    <div class="stat">
+      <div class="label">Cash</div>
+      <div class="value" id="cash">—</div>
+      <div class="sub" id="drawdown"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Equity curve</h2>
+    <svg id="chart" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card">
+    <h2>Posizioni aperte</h2>
+    <div id="positions"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ultimi trade</h2>
+    <div id="orders"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ultimi segnali validati</h2>
+    <div id="signals"></div>
+  </div>
+
+  <div class="card" id="errors-card" style="display:none">
+    <h2>Errori ultimo ciclo</h2>
+    <div id="errors"></div>
+  </div>
+
+  <div class="footer">
+    Dashboard read-only — nessun ordine può partire da qui.<br>
+    Sistema sperimentale, non consulenza finanziaria.
+  </div>
+
+<script>
+const STATUS_URL = new URLSearchParams(location.search).get('src') || 'data/status.json';
+const fmtEur = v => '€' + Number(v || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+function pnlClass(v) { return v >= 0 ? 'pos' : 'neg'; }
+
+function drawChart(history) {
+  const svg = document.getElementById('chart');
+  svg.innerHTML = '';
+  const vals = (history || []).map(h => h.total_value_eur).filter(v => v > 0);
+  if (vals.length < 2) return;
+  const w = svg.clientWidth || 320, h = 120, pad = 4;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const min = Math.min(...vals), max = Math.max(...vals), span = (max - min) || 1;
+  const pts = vals.map((v, i) => {
+    const x = pad + i * (w - 2 * pad) / (vals.length - 1);
+    const y = h - pad - (v - min) / span * (h - 2 * pad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const up = vals[vals.length - 1] >= vals[0];
+  const color = up ? '#3fb950' : '#f85149';
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  line.setAttribute('points', pts.join(' '));
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '2');
+  svg.appendChild(line);
+}
+
+function renderTable(el, rows, cols) {
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty">Nessun dato</div>'; return; }
+  let html = '<table><tr>' + cols.map(c => `<th class="${c.num ? 'num' : ''}">${c.h}</th>`).join('') + '</tr>';
+  for (const r of rows) {
+    html += '<tr>' + cols.map(c => `<td class="${c.num ? 'num' : ''}">${c.f(r)}</td>`).join('') + '</tr>';
+  }
+  el.innerHTML = html + '</table>';
+}
+
+async function refresh() {
+  try {
+    const res = await fetch(STATUS_URL + '?t=' + Date.now(), {cache: 'no-store'});
+    const s = await res.json();
+
+    document.getElementById('updated').textContent =
+      'agg. ' + new Date(s.generated_at).toLocaleTimeString('it-IT');
+    document.getElementById('banner-kill').className = 'banner' + (s.kill_switch ? ' kill' : '');
+    document.getElementById('banner-halt').className = 'banner' + (s.halted ? ' halt' : '');
+    document.getElementById('equity').textContent = fmtEur(s.equity_eur);
+    document.getElementById('cash').textContent = fmtEur(s.cash_eur);
+    document.getElementById('mode-badge').innerHTML =
+      `<span class="badge ${s.mode}">${s.mode.toUpperCase()}</span> risk ${s.risk_score}/100 ${s.risk_label}`;
+    document.getElementById('drawdown').innerHTML =
+      s.drawdown_pct > 0 ? `<span class="neg">DD −${s.drawdown_pct.toFixed(1)}%</span>` : 'DD 0%';
+
+    drawChart(s.equity_history);
+
+    renderTable(document.getElementById('positions'), s.positions, [
+      {h: 'Asset', f: r => r.symbol},
+      {h: 'Qtà', num: true, f: r => Number(r.qty).toLocaleString('it-IT', {maximumFractionDigits: 6})},
+      {h: 'Valore', num: true, f: r => fmtEur(r.value_eur)},
+      {h: 'P&L', num: true, f: r => `<span class="${pnlClass(r.pnl_pct)}">${(r.pnl_pct >= 0 ? '+' : '')}${Number(r.pnl_pct).toFixed(1)}%</span>`},
+    ]);
+
+    renderTable(document.getElementById('orders'), s.last_orders, [
+      {h: 'Quando', f: r => (r.created_at || '').slice(5, 16)},
+      {h: 'Azione', f: r => `<span class="badge ${r.action.toLowerCase()}">${r.action}</span>`},
+      {h: 'Asset', f: r => r.symbol},
+      {h: '€', num: true, f: r => fmtEur(r.amount_eur)},
+      {h: 'Stato', f: r => r.status},
+    ]);
+
+    renderTable(document.getElementById('signals'), s.last_signals, [
+      {h: 'Quando', f: r => (r.created_at || '').slice(5, 16)},
+      {h: 'Azione', f: r => `<span class="badge ${r.action.toLowerCase()}">${r.action}</span>`},
+      {h: 'Asset', f: r => r.symbol},
+      {h: 'Conf', num: true, f: r => Number(r.confidence).toFixed(2)},
+      {h: 'Motivo', f: r => (r.reason || '').slice(0, 60)},
+    ]);
+
+    const errCard = document.getElementById('errors-card');
+    if (s.errors && s.errors.length) {
+      errCard.style.display = '';
+      document.getElementById('errors').innerHTML =
+        s.errors.map(e => `<div class="err">! ${e}</div>`).join('');
+    } else errCard.style.display = 'none';
+  } catch (e) {
+    document.getElementById('updated').textContent = 'status.json non raggiungibile';
+  }
+}
+
+refresh();
+setInterval(refresh, 60000);
+</script>
+</body>
+</html>

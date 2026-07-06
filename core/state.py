@@ -49,7 +49,7 @@ class AssetForecast(TypedDict):
     tech_score: float
 
 
-class TradingSignal(TypedDict):
+class TradingSignal(TypedDict, total=False):
     symbol: str
     action: Literal["BUY", "SELL", "HOLD", "TRIM"]
     confidence: float
@@ -58,6 +58,9 @@ class TradingSignal(TypedDict):
     sentiment_score: float
     forecast_score: float
     price_eur: float
+    # v2 — TPSL levels (EUR); 0 = not set
+    stop_loss_eur: float
+    take_profit_eur: float
 
 
 class Position(TypedDict):
@@ -115,6 +118,8 @@ class BotState(TypedDict):
     eur_usd: float
     # --- technical analysis ---
     technical_indicators: dict[str, TechnicalIndicators]
+    # --- regime detector (trend_up | trend_down | range, + atr_pct) ---
+    regimes: dict[str, dict]
     # --- forecast (sentiment + technical + Claude synthesis) ---
     forecasts: dict[str, AssetForecast]
     # --- strategy ---

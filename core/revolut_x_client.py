@@ -101,6 +101,29 @@ class RevolutXClient:
         resp.raise_for_status()
         return resp.json()
 
+    def get_candles(self, symbol: str, interval: str = "1h", limit: int = 200) -> list[dict]:
+        """Historical OHLCV candles (multi-timeframe: 5m/1h/1d) for backtest
+        and regime detection."""
+        revx_sym = _to_revx_symbol(symbol)
+        path = f"/crypto-exchange/candles?symbol={revx_sym}&interval={interval}&limit={limit}"
+        headers = self._sign("GET", f"/api/1.0{path}")
+        resp = requests.get(_BASE_URL + path, headers=headers, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_spread_pct(self, symbol: str) -> float | None:
+        """Live bid/ask spread in % from the ticker (for the cost gate)."""
+        try:
+            quote = self.get_ticker(symbol)
+            bid = float(quote.get("bid", 0))
+            ask = float(quote.get("ask", 0))
+            if bid > 0 and ask > bid:
+                mid = (bid + ask) / 2
+                return round((ask - bid) / mid * 100.0, 4)
+        except Exception as exc:
+            logger.debug("RevolutX spread fetch failed for %s: %s", symbol, exc)
+        return None
+
     def place_order(
         self,
         symbol: str,
@@ -108,12 +131,16 @@ class RevolutXClient:
         amount_eur: float,
         price_eur: float,
         paper: bool = True,
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
     ) -> dict:
         """
-        Place a market order on Revolut X.
+        Place a market order on Revolut X, with native TPSL when provided.
 
         In paper mode: simulates the order without hitting the API.
         qty is derived from amount_eur / price_eur.
+        stop_loss / take_profit are trigger prices in the pair's quote
+        currency — attached natively so protection survives bot downtime.
         """
         revx_symbol = _to_revx_symbol(symbol)
         side = action.lower()  # "buy" | "sell"
@@ -121,8 +148,8 @@ class RevolutXClient:
 
         if paper:
             logger.info(
-                "[PAPER] RevolutX %s %s qty=%.8f (~€%.2f)",
-                side.upper(), revx_symbol, qty, amount_eur,
+                "[PAPER] RevolutX %s %s qty=%.8f (~€%.2f) SL=%s TP=%s",
+                side.upper(), revx_symbol, qty, amount_eur, stop_loss, take_profit,
             )
             return {
                 "status": "simulated",
@@ -131,18 +158,30 @@ class RevolutXClient:
                 "action": action,
                 "amount_eur": amount_eur,
                 "qty": qty,
+                "stop_loss": stop_loss,
+                "take_profit": take_profit,
                 "order_id": f"paper-{int(time.time())}",
             }
 
         if not self.is_ready:
             raise RuntimeError("RevolutX client not initialised — check REVOLUT_X_PRIVATE_KEY_PATH")
 
-        body_dict = {
+        body_dict: dict = {
             "symbol": revx_symbol,
             "type": "market",
             "side": side,
             "qty": str(qty),
         }
+        # Native TPSL — only meaningful on entries (BUY): the exchange keeps
+        # the protection active even if the bot goes down
+        if side == "buy" and (stop_loss or take_profit):
+            tpsl: dict = {}
+            if stop_loss:
+                tpsl["stop_loss"] = {"trigger_price": str(round(stop_loss, 6))}
+            if take_profit:
+                tpsl["take_profit"] = {"trigger_price": str(round(take_profit, 6))}
+            body_dict["tpsl"] = tpsl
+
         body = json.dumps(body_dict, separators=(",", ":"))
         path = "/crypto-exchange/orders"
         headers = self._sign("POST", f"/api/1.0{path}", body)
@@ -159,5 +198,8 @@ class RevolutXClient:
             "action": action,
             "amount_eur": amount_eur,
             "qty": qty,
+            "stop_loss": stop_loss,
+            "take_profit": take_profit,
             "order_id": data.get("id", ""),
+            "fee": data.get("fee"),
         }

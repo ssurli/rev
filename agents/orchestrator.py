@@ -22,6 +22,7 @@ from agents import (
     market_data,
     news_monitor,
     portfolio,
+    regime,
     risk_manager,
     sentiment,
     strategy,
@@ -114,6 +115,16 @@ def _node_technical(state: BotState) -> BotState:
     return state
 
 
+def _node_regime(state: BotState) -> BotState:
+    try:
+        state = regime.run(state)
+    except Exception as exc:
+        logger.error("regime error: %s", exc)
+        state["errors"].append(f"regime: {exc}")
+        state.setdefault("regimes", {})
+    return state
+
+
 def _node_forecast(state: BotState) -> BotState:
     try:
         state = forecast.run(state)
@@ -180,6 +191,7 @@ def build_graph() -> StateGraph:
     g.add_node("sentiment",         _node_sentiment)
     g.add_node("market_data",       _node_market_data)
     g.add_node("technical",         _node_technical)
+    g.add_node("regime",            _node_regime)
     g.add_node("forecast",          _node_forecast)
     g.add_node("strategy",          _node_strategy)
     g.add_node("risk_manager",      _node_risk_manager)
@@ -192,7 +204,8 @@ def build_graph() -> StateGraph:
     g.add_edge("macro",            "sentiment")
     g.add_edge("sentiment",        "market_data")
     g.add_edge("market_data",      "technical")
-    g.add_edge("technical",        "forecast")
+    g.add_edge("technical",        "regime")
+    g.add_edge("regime",           "forecast")
     g.add_edge("forecast",         "strategy")
     g.add_edge("strategy",         "risk_manager")
     g.add_edge("risk_manager",     "execution")
@@ -221,6 +234,7 @@ def run_cycle(mode: str = TRADING_MODE) -> BotState:
         "market_data": {},
         "eur_usd": 1.08,
         "technical_indicators": {},
+        "regimes": {},
         "forecasts": {},
         "signals": [],
         "validated_signals": [],

@@ -82,7 +82,7 @@ class OrderRouter:
                 "amount_eur": amount_eur,
             }
 
-        # --- Crypto → Revolut X ---
+        # --- Crypto → Revolut X (with native TPSL when the signal has levels) ---
         if symbol in CRYPTO_ASSETS:
             return self._revolut.place_order(
                 symbol=symbol,
@@ -90,6 +90,8 @@ class OrderRouter:
                 amount_eur=amount_eur,
                 price_eur=price_eur,
                 paper=paper,
+                stop_loss=signal.get("stop_loss_eur") or None,
+                take_profit=signal.get("take_profit_eur") or None,
             )
 
         # --- Stocks/ETF → Alpaca ---

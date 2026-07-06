@@ -102,6 +102,25 @@ def init_db() -> None:
             created_at      TEXT DEFAULT (datetime('now'))
         );
 
+        CREATE TABLE IF NOT EXISTS fills (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id        TEXT,
+            cycle_id        TEXT,
+            ts_utc          TEXT,       -- fill timestamp, ISO8601 UTC
+            symbol          TEXT,
+            side            TEXT,       -- BUY | SELL
+            qty             REAL,
+            price           REAL,       -- price in quote currency
+            price_ccy       TEXT,       -- e.g. USD
+            fee_eur         REAL,
+            eur_rate        REAL,       -- quote-ccy → EUR rate at fill time
+            countervalue_eur REAL,      -- qty * price converted to EUR
+            broker          TEXT,
+            mode            TEXT,       -- paper | live
+            created_at      TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_fills_symbol ON fills (symbol, ts_utc);
+
         CREATE TABLE IF NOT EXISTS economic_indicators (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             cycle_id        TEXT,
@@ -251,6 +270,74 @@ def get_recent_signals(limit: int = 50) -> list[dict]:
             (limit,),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+# --- fills (tax ledger) ---
+
+def save_fill(fill: dict) -> None:
+    with _conn() as con:
+        con.execute(
+            "INSERT INTO fills (order_id, cycle_id, ts_utc, symbol, side, qty, price, "
+            "price_ccy, fee_eur, eur_rate, countervalue_eur, broker, mode) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (fill["order_id"], fill["cycle_id"], fill["ts_utc"], fill["symbol"],
+             fill["side"], fill["qty"], fill["price"], fill["price_ccy"],
+             fill["fee_eur"], fill["eur_rate"], fill["countervalue_eur"],
+             fill["broker"], fill["mode"]),
+        )
+
+
+def get_fills(year: int | None = None, mode: str | None = None) -> list[dict]:
+    """Return fills chronologically, optionally filtered by year and mode."""
+    query = "SELECT * FROM fills WHERE 1=1"
+    params: list = []
+    if year is not None:
+        query += " AND ts_utc >= ? AND ts_utc < ?"
+        params += [f"{year}-01-01", f"{year + 1}-01-01"]
+    if mode is not None:
+        query += " AND mode = ?"
+        params.append(mode)
+    query += " ORDER BY ts_utc ASC, id ASC"
+    with _conn() as con:
+        rows = con.execute(query, params).fetchall()
+    return [dict(r) for r in rows]
+
+
+# --- anti-overtrading queries ---
+
+_EXECUTED_STATUSES = ("filled", "simulated")
+
+
+def count_trades_today(mode: str) -> int:
+    with _conn() as con:
+        row = con.execute(
+            "SELECT COUNT(*) AS n FROM orders "
+            "WHERE mode = ? AND status IN (?, ?) AND created_at >= date('now')",
+            (mode, *_EXECUTED_STATUSES),
+        ).fetchone()
+    return int(row["n"])
+
+
+def turnover_today_eur(mode: str) -> float:
+    with _conn() as con:
+        row = con.execute(
+            "SELECT COALESCE(SUM(amount_eur), 0) AS t FROM orders "
+            "WHERE mode = ? AND status IN (?, ?) AND created_at >= date('now')",
+            (mode, *_EXECUTED_STATUSES),
+        ).fetchone()
+    return float(row["t"])
+
+
+def minutes_since_last_trade(symbol: str, mode: str) -> float | None:
+    """Minutes elapsed since the last executed order on `symbol` (None = never)."""
+    with _conn() as con:
+        row = con.execute(
+            "SELECT (julianday('now') - julianday(created_at)) * 1440 AS mins "
+            "FROM orders WHERE symbol = ? AND mode = ? AND status IN (?, ?) "
+            "ORDER BY created_at DESC LIMIT 1",
+            (symbol, mode, *_EXECUTED_STATUSES),
+        ).fetchone()
+    return float(row["mins"]) if row else None
 
 
 # --- forecasts ---

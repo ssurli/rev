@@ -16,17 +16,20 @@ import logging
 
 from core.config import (
     ASSETS,
+    ENABLE_REGIME_FILTER,
     MAX_POSITION_PCT,
     MAX_TRADE_EUR,
     MIN_CASH_PCT,
     STOP_LOSS_PCT,
     TAKE_PROFIT_PCT,
 )
+from core.sizing import position_size
 from core.state import AssetForecast, BotState, PortfolioSnapshot, TradingSignal
 
 logger = logging.getLogger(__name__)
 
 _BUY_THRESHOLD  = 0.35
+_BUY_THRESHOLD_RANGE = 0.45   # in regime range serve un segnale più forte
 _SELL_THRESHOLD = -0.35
 _MIN_CONFIDENCE = 0.50
 _PRICE_SURGE_GUARD = 3.0   # non comprare se già salito >3% in 1h
@@ -53,6 +56,7 @@ def run(state: BotState) -> BotState:
     forecasts = state.get("forecasts", {})
     market    = state.get("market_data", {})
     portfolio = state.get("portfolio", {})
+    regimes   = state.get("regimes", {})
     total_eur = portfolio.get("total_value_eur", 0.0)
     cash_eur  = portfolio.get("cash_eur", 0.0)
 
@@ -98,8 +102,22 @@ def run(state: BotState) -> BotState:
             ))
             continue
 
+        # --- regime filter (v2) ---
+        regime_info = regimes.get(sym, {})
+        regime = regime_info.get("regime", "range") if ENABLE_REGIME_FILTER else "unknown"
+        atr_pct = regime_info.get("atr_pct", 0.0)
+        buy_threshold = _BUY_THRESHOLD_RANGE if regime == "range" else _BUY_THRESHOLD
+
         # --- BUY ---
-        if forecast_score >= _BUY_THRESHOLD and confidence >= _MIN_CONFIDENCE and direction == "BULLISH":
+        if forecast_score >= buy_threshold and confidence >= _MIN_CONFIDENCE and direction == "BULLISH":
+            if ENABLE_REGIME_FILTER and regime == "trend_down":
+                signals.append(TradingSignal(
+                    symbol=sym, action="HOLD", confidence=confidence,
+                    amount_eur=0.0,
+                    reason=f"BUY bloccato: regime trend_down (strength={regime_info.get('trend_strength', 0)})",
+                    sentiment_score=sentiment_s, forecast_score=forecast_score, price_eur=price,
+                ))
+                continue
             if change_1h > _PRICE_SURGE_GUARD:
                 signals.append(TradingSignal(
                     symbol=sym, action="HOLD", confidence=confidence,
@@ -116,12 +134,29 @@ def run(state: BotState) -> BotState:
                     sentiment_score=sentiment_s, forecast_score=forecast_score, price_eur=price,
                 ))
                 continue
-            amount = min(MAX_TRADE_EUR, cash_eur * 0.10)
+
+            # Sizing risk-based (ATR): quanto perdo se lo stop scatta, non
+            # quanto cash ho a disposizione
+            size = position_size(
+                symbol=sym, equity_eur=total_eur, cash_eur=cash_eur,
+                price_eur=price, confidence=confidence, atr_pct=atr_pct,
+            )
+            if size["amount_eur"] <= 0:
+                signals.append(TradingSignal(
+                    symbol=sym, action="HOLD", confidence=confidence,
+                    amount_eur=0.0,
+                    reason=f"BUY bloccato: sizing — {size['reason']}",
+                    sentiment_score=sentiment_s, forecast_score=forecast_score, price_eur=price,
+                ))
+                continue
             signals.append(TradingSignal(
                 symbol=sym, action="BUY", confidence=round(confidence, 2),
-                amount_eur=round(amount, 2),
-                reason=f"BULLISH: score={forecast_score:.2f} conf={confidence:.0%} — {reasoning[:80]}",
+                amount_eur=size["amount_eur"],
+                reason=(f"BULLISH[{regime}]: score={forecast_score:.2f} conf={confidence:.0%} "
+                        f"risk=€{size['risk_eur']:.2f} — {reasoning[:60]}"),
                 sentiment_score=sentiment_s, forecast_score=forecast_score, price_eur=price,
+                stop_loss_eur=size["stop_loss_eur"],
+                take_profit_eur=size["take_profit_eur"],
             ))
 
         # --- SELL ---
