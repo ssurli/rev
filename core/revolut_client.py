@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 
@@ -111,7 +111,7 @@ class RevolutClient:
                 "price_eur": price_eur,
                 "status": "simulated",
                 "mode": "paper",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         try:
             payload = {
@@ -136,7 +136,7 @@ class RevolutClient:
                 "price_eur": price_eur,
                 "status": data.get("state", "submitted"),
                 "mode": "live",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         except Exception as exc:
             logger.error("place_order error: %s", exc)
@@ -148,7 +148,7 @@ class RevolutClient:
                 "price_eur": price_eur,
                 "status": "rejected",
                 "mode": "live",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
     def cancel_order(self, order_id: str) -> bool:
